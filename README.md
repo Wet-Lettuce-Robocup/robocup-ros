@@ -5,6 +5,6 @@ This repository contains all code for the ROS2 environment on the Wet Lettuce ro
 ## Usage
 
 ```bash
-docker build -t wetlettuce/ros .
+docker build -t wetlettuce/robot .
 docker-compose up -d
 ```
