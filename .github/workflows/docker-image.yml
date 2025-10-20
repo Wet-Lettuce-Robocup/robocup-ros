@@ -25,5 +25,5 @@ jobs:
         -v /run/udev/:/run/udev/ \
         --group-add video \
         -e HOME=/tpm \
-        maze/ros \
+        wetlettuce/robot \
         colcon test --event-handlers console_direct+
