@@ -1,12 +1,15 @@
 import math
-import rclpy
-import serial
-from rclpy.node import Node
+
+# from builtin_interfaces.msg import Time
+from geometry_msgs.msg import Point, Quaternion, Twist, Vector3
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Pose, Point, Quaternion, Twist, Vector3
-from builtin_interfaces.msg import Time
+import rclpy
+from rclpy.node import Node
+import serial
+
 
 class OdomPublisher(Node):
+
     START_FLAG: bytes = b'\xA5'
 
     ENCODER_REQUEST: bytes = b'\x40'
@@ -24,11 +27,11 @@ class OdomPublisher(Node):
         self.vx = 0.0  # m/s
         self.vth = 0.0  # rad/s
 
-        self.ser = serial.Serial("/dev/ttyAMA0", 115200, timeout=1)
+        self.ser = serial.Serial('/dev/ttyAMA0', 115200, timeout=1)
         self.get_logger().info(f"Serial connected: {'y' if self.ser.is_open else 'n'}")
         self.get_logger().info(str(self.ser))
-        
-        self.wheel_dist = 0.185 # m
+
+        self.wheel_dist = 0.185  # m
         self.counts_per_revolution = 480
         self.wheel_radius = 0.04
         self.wheel_circumefrence = math.pi * (self.wheel_radius ** 2)
@@ -38,15 +41,15 @@ class OdomPublisher(Node):
         msg = self.ser.read(18)
 
         if len(msg) < 18:
-            self.get_logger().warn(f"Wrong Size ({len(msg)})")
+            self.get_logger().warn(f'Wrong Size ({len(msg)})')
             return
 
         if msg[0:1] != self.START_FLAG:
-            self.get_logger().warn(f"Incorrect Start Flag ({msg[0]})")
+            self.get_logger().warn(f'Incorrect Start Flag ({msg[0]})')
             return
 
         if msg[1:2] != self.ENCODER_RESPONSE:
-            self.get_logger().warn(f"Incorrect Response Byte ({msg[1]})")
+            self.get_logger().warn(f'Incorrect Response Byte ({msg[1]})')
             return
 
         enc_a = int.from_bytes(msg[2:6], signed=True)
@@ -60,7 +63,7 @@ class OdomPublisher(Node):
     def publish_odom(self):
         current_time = self.get_clock().now()
         dt = 0.1  # seconds since last update
- 
+
         enc_data = self.get_encoders()
 
         if enc_data is None:
@@ -86,8 +89,8 @@ class OdomPublisher(Node):
 
         odom = Odometry()
         odom.header.stamp = current_time.to_msg()
-        odom.header.frame_id = "odom"
-        odom.child_frame_id = "base_link"
+        odom.header.frame_id = 'odom'
+        odom.child_frame_id = 'base_link'
 
         # Set the position
         odom.pose.pose.position = Point(x=self.x, y=self.y, z=0.0)
@@ -103,21 +106,18 @@ class OdomPublisher(Node):
 
         self.publisher_.publish(odom)
 
-        #self.get_logger().info(f'Published Odometry: x={self.x:.2f}, y={self.y:.2f}, th={self.th:.2f}')
-
     def euler_to_quaternion(self, roll, pitch, yaw):
-        """
-        Convert Euler angles to quaternion.
-        """
+        """Convert Euler angles to quaternion."""
         qx = math.sin(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) - \
-             math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
+            math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
         qy = math.cos(roll/2) * math.sin(pitch/2) * math.cos(yaw/2) + \
-             math.sin(roll/2) * math.cos(pitch/2) * math.sin(yaw/2)
+            math.sin(roll/2) * math.cos(pitch/2) * math.sin(yaw/2)
         qz = math.cos(roll/2) * math.cos(pitch/2) * math.sin(yaw/2) - \
-             math.sin(roll/2) * math.sin(pitch/2) * math.cos(yaw/2)
+            math.sin(roll/2) * math.sin(pitch/2) * math.cos(yaw/2)
         qw = math.cos(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) + \
-             math.sin(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
+            math.sin(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
         return [qx, qy, qz, qw]
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -125,6 +125,7 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

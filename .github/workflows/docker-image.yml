@@ -1,0 +1,20 @@
+name: ROS2 Tests
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-noble-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # fetch-depth: 0 is recommended if you need to access full git history
+          fetch-depth: 0
+      - name: Build and run tests
+        uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          package-name: follower
+          target-ros2-distro: kilted
