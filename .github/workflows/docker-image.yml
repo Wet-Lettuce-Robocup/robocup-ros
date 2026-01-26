@@ -18,7 +18,7 @@ jobs:
       run: docker build . --file Dockerfile --tag wetlettuce/robot:$(date +%s)
     - name: Run the ROS Tests
       run: |
-        docker run -it \
+        docker run -i \
         --privileged \
         --net=host \
         -v /dev:/dev/ \
