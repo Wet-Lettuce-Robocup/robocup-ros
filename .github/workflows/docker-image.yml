@@ -1,29 +1,30 @@
-name: Docker Image CI
+name: ROS2 Tests
 
-on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+on: [push, pull_request]
 
 jobs:
-
-  build:
-
+  build_and_test:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag wetlettuce/robot:$(date +%s)
-    - name: Run the ROS Tests
-      run: |
-        docker run -i \
-        --privileged \
-        --net=host \
-        -v /dev:/dev/ \
-        -v /run/udev/:/run/udev/ \
-        --group-add video \
-        -e HOME=/tpm \
-        wetlettuce/robot \
-        colcon test --event-handlers console_direct+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          # fetch-depth: 0 is recommended if you need to access full git history
+          fetch-depth: 0
+
+      - name: Build and test ROS 2 workspace
+        uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          # Specify the ROS 2 distribution, e.g., 'humble', 'iron', 'rolling'
+          ros-distro: kilted
+          # Specify the build and test arguments
+          colcon-defaults: |
+            {
+              "build": {
+                "args": "--cmake-args -DCMAKE_BUILD_TYPE=Release"
+              },
+              "test": {
+                "args": "--packages-select follower",
+                "verb-args": "--event-handlers console_cohesion+ --retest-until-fail --abort-on-error"
+              }
+            }
