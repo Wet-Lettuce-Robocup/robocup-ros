@@ -1,10 +1,12 @@
+from enum import Enum
+
+from geometry_msgs.msg import Twist
+from lifecycle_msgs.srv import ChangeState
 import rclpy
 from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
 from rclpy.lifecycle import State as LifecycleState
-from lifecycle_msgs.srv import ChangeState
-from enum import Enum
-from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64, Bool
+from std_msgs.msg import Bool, Float64
+
 
 class State(Enum):
     INIT = 0
@@ -22,7 +24,9 @@ class State(Enum):
     APPROACHING_EXIT = 12
     STOP = 13
 
+
 class StateMachineNode(LifecycleNode):
+
     def __init__(self):
         super().__init__('state_machine')
         self.current_state = State.INIT
@@ -91,6 +95,7 @@ class StateMachineNode(LifecycleNode):
             self.change_node_state(self.motor_client, Transition.TRANSITION_DEACTIVATE)
             twist = Twist()
             self.cmd_pub.publish(twist)
+
 
 def main(args=None):
     rclpy.init(args=args)
