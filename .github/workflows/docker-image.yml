@@ -17,4 +17,4 @@ jobs:
         uses: ros-tooling/action-ros-ci@v0.4
         with:
           package-name: follower
-          target-ros2-distro: jazzy
+          target-ros2-distro: kilted
