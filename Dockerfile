@@ -30,6 +30,10 @@ RUN mkdir -p /app/src \
 RUN apt-get update && apt-get install -y python3-gpiozero python3-serial \
       python3-opencv
 
+RUN cd /app/src \
+  && git clone https://github.com/Wet-Lettuce-Robocup/line-follow.git \
+  && git clone https://github.com/Wet-Lettuce-Robocup/T-rescue.git
+
 COPY ./ros /app/src
 COPY docker_entrypoint.sh /app/
 
