@@ -1,0 +1,6 @@
+[submodule "ros/line-follow"]
+	path = ros/line-follow
+	url = https://github.com/Wet-Lettuce-Robocup/line-follow.git
+[submodule "ros/t-rescue"]
+	path = ros/t-rescue
+	url = https://github.com/Wet-Lettuce-Robocup/T-rescue.git
