@@ -32,9 +32,9 @@ class StateMachineNode(LifecycleNode):
         self.current_state = State.INIT
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.line_sub = None
-        self.can_sub = None
+        self.ball_sub = None
         self.line_error = 0.0
-        self.can_detected = False
+        self.ball_detected = False
 
         # Lifecycle service clients
         self.line_sensor_client = self.create_client(ChangeState, '/line_sensor/change_state')
@@ -51,14 +51,14 @@ class StateMachineNode(LifecycleNode):
 
     def on_configure(self, state: LifecycleState):
         self.line_sub = self.create_subscription(Float64, '/line_error', self.line_callback, 10)
-        self.can_sub = self.create_subscription(Bool, '/can_detected', self.can_callback, 10)
+        self.ball_sub = self.create_subscription(Bool, '/ball_detected', self.ball_callback, 10)
         return TransitionCallbackReturn.SUCCESS
 
     def line_callback(self, msg):
         self.line_error = msg.data
 
-    def can_callback(self, msg):
-        self.can_detected = msg.data
+    def ball_callback(self, msg):
+        self.ball_detected = msg.data
 
     def state_loop(self):
         from lifecycle_msgs.msg import Transition
@@ -75,17 +75,17 @@ class StateMachineNode(LifecycleNode):
             twist.linear.x = 0.2
             twist.angular.z = -self.line_error * 1.0
             self.cmd_pub.publish(twist)
-            if abs(self.line_error) > 1.0 or self.can_detected:
-                self.current_state = State.SEARCHING_CAN
+            if abs(self.line_error) > 1.0 or self.ball_detected:
+                self.current_state = State.SEARCHING_BALL
 
-        elif self.current_state == State.SEARCHING_CAN:
+        elif self.current_state == State.SEARCHING_BALL:
             # Activate camera, deactivate line sensor
             self.change_node_state(self.camera_client, Transition.TRANSITION_ACTIVATE)
             self.change_node_state(self.line_sensor_client, Transition.TRANSITION_DEACTIVATE)
             twist = Twist()
             twist.angular.z = 0.5
             self.cmd_pub.publish(twist)
-            if self.can_detected:
+            if self.ball_detected:
                 self.current_state = State.LINE_FOLLOWING  # Simplified
 
         elif self.current_state == State.STOP:
