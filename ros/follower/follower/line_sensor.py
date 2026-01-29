@@ -1,11 +1,13 @@
-import cv2
-import rclpy
+# import cv2
+# import rclpy
 from rclpy.lifecycle import LifecycleNode
 from rclpy.lifecycle import State, TransitionCallbackReturn
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float64
 
+
 class LineSensorNode(LifecycleNode):
+
     def __init__(self) -> None:
         super().__init__('line_sensor')
         self.publisher_ = None
@@ -13,7 +15,8 @@ class LineSensorNode(LifecycleNode):
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.publisher_ = self.create_publisher(Float64, '/line_error', 10)
-        self.subscriber_ = self.create_subscription(Image, '/line_camera/image_raw', self.image_callback, 10)
+        self.subscriber_ = self.create_subscription(Image, '/line_camera/image_raw',
+                                                    self.image_callback, 10)
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: State) -> TransitionCallbackReturn:
