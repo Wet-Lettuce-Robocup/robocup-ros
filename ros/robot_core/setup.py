@@ -3,7 +3,7 @@ import os
 
 from setuptools import find_packages, setup
 
-package_name = 'follower'
+package_name = 'robot_core'
 
 setup(
     name=package_name,
@@ -19,13 +19,13 @@ setup(
     zip_safe=True,
     maintainer="William D'Olier",
     maintainer_email='william@dolier.net',
-    description='Package for Wet Lettuce line follow robot.',
+    description='Core package for Wet Lettuce line follow robot.',
     license='GPL',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'twist_subscriber = follower.twist_subscriber:main',
-            'odom_publisher = follower.odom_publisher:main',
+            'twist_subscriber = robot_core.twist_subscriber:main',
+            'odom_publisher = robot_core.odom_publisher:main',
         ],
     },
 )

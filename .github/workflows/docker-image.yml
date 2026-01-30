@@ -16,5 +16,5 @@ jobs:
       - name: Build and run tests
         uses: ros-tooling/action-ros-ci@v0.4
         with:
-          package-name: follower
+          package-name: robot_core
           target-ros2-distro: kilted
