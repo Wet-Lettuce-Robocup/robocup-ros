@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>follower</name>
+  <name>robot_core</name>
   <version>0.0.1</version>
-  <description>Package for Wet Lettuce line follow robot.</description>
+  <description>Core package for Wet Lettuce line follow robot.</description>
   <maintainer email="william@dolier.net">William D'Olier</maintainer>
   <license>GPL</license>
 
