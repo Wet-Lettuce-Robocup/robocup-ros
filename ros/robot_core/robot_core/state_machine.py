@@ -7,6 +7,7 @@ from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
 from rclpy.lifecycle import State as LifecycleState
 from std_msgs.msg import Bool, Float64
 
+
 class State(Enum):
     INIT = 0
     LINE_FOLLOWING = 1
