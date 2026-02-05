@@ -4,3 +4,6 @@
 [submodule "ros/t-rescue"]
 	path = ros/t-rescue
 	url = https://github.com/Wet-Lettuce-Robocup/T-rescue.git
+[submodule "ros/bain-software-rescue"]
+	path = ros/bain-software-rescue
+	url = https://github.com/Wet-Lettuce-Robocup/bain-software-rescue.git
