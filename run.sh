@@ -5,4 +5,4 @@ docker run -it \
   -v /run/udev/:/run/udev/ \
   --group-add video \
   -e HOME=/tpm \
-  wetlettuce/robot
+  robocup-ros-ros
