@@ -20,12 +20,10 @@ class StateMachineNode(LifecycleNode):
     def __init__(self):
         super().__init__('state_machine')
         self.current_state = State.INIT
-        self.begin_rescue_sub = None
-        self.end_rescue_sub = None
+        self.rescue_active_sub = None
         self.idle_button_sub = None
 
-        self.begin_rescue = False
-        self.end_rescue = False
+        self.rescue_active = False
         self.idle_button_pressed = False
 
         # Lifecycle service clients
@@ -43,20 +41,15 @@ class StateMachineNode(LifecycleNode):
         rclpy.spin_until_future_complete(self, future)
 
     def on_configure(self, state: LifecycleState):
-        self.begin_rescue_sub = self.create_subscription(Bool, '/rescue/begin',
-                                                         self.begin_rescue_callback, 10)
-        self.end_rescue_sub = self.create_subscription(Bool, '/rescue/end',
-                                                       self.end_rescue_callback, 10)
-        self.idle_button_sub = self.create_subscription(Bool, '/button/idle',
+        self.rescue_active_sub = self.create_subscription(Bool, '/rescue_active',
+                                                         self.rescue_active_callback, 10)
+        self.idle_button_sub = self.create_subscription(Bool, '/idle_button',
                                                         self.idle_button_callback, 10)
 
         return TransitionCallbackReturn.SUCCESS
 
-    def begin_rescue_callback(self, msg):
-        self.begin_rescue = msg.data
-
-    def end_rescue_callback(self, msg):
-        self.end_rescue = msg.data
+    def rescue_active_callback(self, msg):
+        self.rescue_active = msg.data
 
     def idle_button_callback(self, msg):
         self.idle_button_pressed = msg.data
@@ -79,12 +72,12 @@ class StateMachineNode(LifecycleNode):
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
-            if self.begin_rescue:
+            if self.rescue_active:
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
 
         elif self.current_state == State.RESCUE:
-            if self.end_rescue:
+            if not self.rescue_active:
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
 
