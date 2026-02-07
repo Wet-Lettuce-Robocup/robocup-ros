@@ -16,6 +16,16 @@ class State(Enum):
 
 
 class StateMachineNode(LifecycleNode):
+    """Switches between line follow, rescue and idle states.
+
+    Required names for line follow and rescue nodes to be managed by this node:
+        Line follow node: line_follower
+        Rescue node: rescue_node
+
+    Topics for changing states:
+        Rescue: /rescue_active (Bool)
+        Idle: /idle_button (Bool)
+    """
 
     def __init__(self):
         super().__init__('state_machine')
