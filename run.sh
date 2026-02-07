@@ -5,4 +5,5 @@ docker run -it \
   -v /run/udev/:/run/udev/ \
   --group-add video \
   -e HOME=/tpm \
-  robocup-ros-ros
+  robocup-ros-ros \
+  bash

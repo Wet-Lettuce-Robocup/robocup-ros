@@ -12,4 +12,6 @@ services:
       - HOME=/tpm
     stdin_open: true    # equivalent to -i (interactive)
     tty: true           # equivalent to -t (tty)
+    stop_signal: SIGINT
+    stop_grace_period: 20s
 
