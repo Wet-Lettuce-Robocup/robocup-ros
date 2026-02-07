@@ -42,7 +42,7 @@ class StateMachineNode(LifecycleNode):
 
     def on_configure(self, state: LifecycleState):
         self.rescue_active_sub = self.create_subscription(Bool, '/rescue_active',
-                                                         self.rescue_active_callback, 10)
+                                                          self.rescue_active_callback, 10)
         self.idle_button_sub = self.create_subscription(Bool, '/idle_button',
                                                         self.idle_button_callback, 10)
 
