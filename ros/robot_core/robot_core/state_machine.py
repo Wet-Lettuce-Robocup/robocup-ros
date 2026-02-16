@@ -1,47 +1,48 @@
 from enum import Enum
 
-from geometry_msgs.msg import Twist
 from lifecycle_msgs.srv import ChangeState
 import rclpy
 from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
 from rclpy.lifecycle import State as LifecycleState
-from std_msgs.msg import Bool, Float64
+from std_msgs.msg import Bool
 
 
 class State(Enum):
     INIT = 0
     LINE_FOLLOWING = 1
-    TURNING_BACK = 2
-    SEARCHING_VICTIMS = 3
-    APPROACHING_VICTIM = 4
-    LOWERING_CLAW = 5
-    GRABBING_VICTIM = 6
-    RAISING_CLAW = 7
-    SEARCHING_EVACUATION_POINT = 8
-    APPROACHING_EVACUATION_POINT = 9
-    RELEASING_VICTIM = 10
-    SEARCHING_EXIT = 11
-    APPROACHING_EXIT = 12
-    STOP = 13
+    RESCUE = 2
+    IDLE = 3
+    STOP = 4
 
 
 class StateMachineNode(LifecycleNode):
+    """Switches between line follow, rescue and idle states.
+
+    Required names for line follow and rescue nodes to be managed by this node:
+        Line follow node: line_follower
+        Rescue node: rescue_node
+
+    Topics for changing states:
+        Rescue: /rescue_active (Bool)
+        Idle: /idle_button (Bool)
+    """
 
     def __init__(self):
         super().__init__('state_machine')
         self.current_state = State.INIT
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
-        self.line_sub = None
-        self.ball_sub = None
-        self.line_error = 0.0
-        self.ball_detected = False
+        self.rescue_active_sub = None
+        self.idle_button_sub = None
+
+        self.rescue_active = False
+        self.idle_button_pressed = False
 
         # Lifecycle service clients
-        self.line_sensor_client = self.create_client(ChangeState, '/line_sensor/change_state')
+        self.line_follower_client = self.create_client(ChangeState, '/line_follower/change_state')
+        self.rescue_client = self.create_client(ChangeState, '/rescue_node/change_state')
         self.camera_client = self.create_client(ChangeState, '/camera_node/change_state')
         self.motor_client = self.create_client(ChangeState, '/motor_control/change_state')
 
-        self.timer = self.create_timer(0.1, self.state_loop)
+        self.timer = self.create_timer(0.05, self.state_loop)
 
     def change_node_state(self, client, transition_id):
         req = ChangeState.Request()
@@ -50,51 +51,52 @@ class StateMachineNode(LifecycleNode):
         rclpy.spin_until_future_complete(self, future)
 
     def on_configure(self, state: LifecycleState):
-        self.line_sub = self.create_subscription(Float64, '/line_error', self.line_callback, 10)
-        self.ball_sub = self.create_subscription(Bool, '/ball_detected', self.ball_callback, 10)
+        self.rescue_active_sub = self.create_subscription(Bool, '/rescue_active',
+                                                          self.rescue_active_callback, 10)
+        self.idle_button_sub = self.create_subscription(Bool, '/idle_button',
+                                                        self.idle_button_callback, 10)
+
         return TransitionCallbackReturn.SUCCESS
 
-    def line_callback(self, msg):
-        self.line_error = msg.data
+    def rescue_active_callback(self, msg):
+        self.rescue_active = msg.data
 
-    def ball_callback(self, msg):
-        self.ball_detected = msg.data
+    def idle_button_callback(self, msg):
+        self.idle_button_pressed = msg.data
 
     def state_loop(self):
         from lifecycle_msgs.msg import Transition
         if self.current_state == State.INIT:
             # Activate motor control for all states
             self.change_node_state(self.motor_client, Transition.TRANSITION_ACTIVATE)
-            self.current_state = State.LINE_FOLLOWING
+            self.current_state = State.IDLE
+
+        elif self.current_state == State.IDLE:
+            if self.idle_button_pressed:
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
+                self.current_state = State.LINE_FOLLOWING
+
+        elif self.idle_button_pressed:
+            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
-            # Ensure line sensor is active, camera is inactive
-            self.change_node_state(self.line_sensor_client, Transition.TRANSITION_ACTIVATE)
-            self.change_node_state(self.camera_client, Transition.TRANSITION_DEACTIVATE)
-            twist = Twist()
-            twist.linear.x = 0.2
-            twist.angular.z = -self.line_error * 1.0
-            self.cmd_pub.publish(twist)
-            if abs(self.line_error) > 1.0 or self.ball_detected:
-                self.current_state = State.SEARCHING_BALL
+            if self.rescue_active:
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
 
-        elif self.current_state == State.SEARCHING_BALL:
-            # Activate camera, deactivate line sensor
-            self.change_node_state(self.camera_client, Transition.TRANSITION_ACTIVATE)
-            self.change_node_state(self.line_sensor_client, Transition.TRANSITION_DEACTIVATE)
-            twist = Twist()
-            twist.angular.z = 0.5
-            self.cmd_pub.publish(twist)
-            if self.ball_detected:
-                self.current_state = State.LINE_FOLLOWING  # Simplified
+        elif self.current_state == State.RESCUE:
+            if not self.rescue_active:
+                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
 
         elif self.current_state == State.STOP:
             # Deactivate all nodes
-            self.change_node_state(self.line_sensor_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.camera_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.motor_client, Transition.TRANSITION_DEACTIVATE)
-            twist = Twist()
-            self.cmd_pub.publish(twist)
 
 
 def main(args=None):
