@@ -13,7 +13,7 @@ class TwistSubscriber(Node):
     DRIVE_REQUEST: bytes = b'\x30'
     STOP_REQUEST: bytes = b'\x31'
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('twist_subscriber')
         self.subscription = self.create_subscription(
                 Twist,
@@ -32,10 +32,10 @@ class TwistSubscriber(Node):
 
         self.get_logger().info('Twist subscriber node started!')
 
-    def stop(self):
+    def stop(self) -> None:
         self.ser.write(self.START_FLAG + self.STOP_REQUEST)
 
-    def twist_callback(self, msg):
+    def twist_callback(self, msg) -> None:
         linear_x = int((msg.linear.x * self.speed_mult * 127) / self.max_counts_per_second)
         linear_y = int((msg.linear.y * self.speed_mult * 127) / self.max_counts_per_second)
         angular_z = int((msg.angular.z * self.speed_mult * 127) / self.max_counts_per_second)
@@ -54,11 +54,11 @@ class TwistSubscriber(Node):
         self.ser.write(self.START_FLAG + self.DRIVE_REQUEST + linear_x_byte +
                        linear_y_byte + angular_z_byte)
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.stop()
 
 
-def main(args=None):
+def main(args=None) -> None:
     rclpy.init(args=args)
     twist_subscriber_node = TwistSubscriber()
     rclpy.spin(twist_subscriber_node)
