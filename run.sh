@@ -1,3 +1,5 @@
+docker compose build
+
 docker run -it \
   --privileged \
   --net=host \

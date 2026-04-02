@@ -21,7 +21,11 @@ setup(
     maintainer_email='william@dolier.net',
     description='Core package for Wet Lettuce line follow robot.',
     license='GPL',
-    tests_require=['pytest'],
+    extras_require={
+        'test': [
+            'pytest'
+        ]
+    },
     entry_points={
         'console_scripts': [
             'twist_subscriber = robot_core.twist_subscriber:main',
