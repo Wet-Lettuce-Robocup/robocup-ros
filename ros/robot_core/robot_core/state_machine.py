@@ -16,7 +16,8 @@ class State(Enum):
 
 
 class StateMachineNode(LifecycleNode):
-    """Switches between line follow, rescue and idle states.
+    """
+    Switches between line follow, rescue and idle states.
 
     Required names for line follow and rescue nodes to be managed by this node:
         Line follow node: line_follower
