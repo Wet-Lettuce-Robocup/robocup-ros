@@ -13,6 +13,28 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
+                package='tf2_ros',
+                executable='static_transform_publisher',
+                name='imu_static_tf',
+                arguments=[
+                    '0',
+                    '0',
+                    '0',  # x y z
+                    '0',
+                    '0',
+                    '0',  # roll pitch yaw
+                    'base_link',
+                    'imu_link',
+                ],
+            ),
+            Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_filter_node',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='robot_core',
                 executable='odom_publisher',
                 name='odom_publisher',
