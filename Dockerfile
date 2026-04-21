@@ -25,7 +25,7 @@ RUN meson setup build --buildtype=release -Dpipelines=rpi/vc4,rpi/pisp -Dipas=rp
 WORKDIR /app/src
 
 RUN git clone https://github.com/christianrauch/camera_ros.git \
-  git clone https://github.com/bnbhat/bno08x-ros2-driver.git
+  && git clone https://github.com/bnbhat/bno08x-ros2-driver.git
 
 WORKDIR /app
 
