@@ -10,20 +10,22 @@ RUN apt-get update && apt-get install -y python3-pip git python3-jinja2 \
   meson cmake \
   python3-yaml python3-ply \
   libglib2.0-dev libgstreamer-plugins-base1.0-dev \
-  python3-colcon-meson
+  python3-colcon-meson \
+  ros-$ROS_DISTRO-robot-localization
 
 # Clone and build raspberrypi's libcamera fork
 RUN git clone https://github.com/raspberrypi/libcamera.git
 
 WORKDIR /app/libcamera
 
-RUN meson setup build --buildtype=release -Dpipelines=rpi/vc4,rpi/pisp -Dipas=rpi/vc4,rpi/pisp -Dv4l2=true -Dgstreamer=enabled -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled \
+RUN meson setup build --buildtype=release -Dpipelines=rpi/vc4,rpi/pisp -Dipas=rpi/vc4,rpi/pisp -Dv4l2=enabled -Dgstreamer=enabled -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled \
   && ninja -C build install
 
 # Clone and build the camera_ros node
 WORKDIR /app/src
 
-RUN git clone https://github.com/christianrauch/camera_ros.git
+RUN git clone https://github.com/christianrauch/camera_ros.git \
+  && git clone https://github.com/bnbhat/bno08x-ros2-driver.git
 
 WORKDIR /app
 
