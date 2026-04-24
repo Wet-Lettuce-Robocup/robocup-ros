@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y python3-pip git python3-jinja2 \
   python3-yaml python3-ply \
   libglib2.0-dev libgstreamer-plugins-base1.0-dev \
   python3-colcon-meson \
+  python3-smbus \
   ros-$ROS_DISTRO-robot-localization
 
 # Clone and build raspberrypi's libcamera fork

@@ -47,9 +47,6 @@ class StateMachineNode(LifecycleNode):
         self.camera_client = self.create_client(
             ChangeState, '/camera_node/change_state'
         )
-        self.motor_client = self.create_client(
-            ChangeState, '/motor_control/change_state'
-        )
 
         self.timer = self.create_timer(0.05, self.state_loop)
 
@@ -80,7 +77,6 @@ class StateMachineNode(LifecycleNode):
 
         if self.current_state == State.INIT:
             # Activate motor control for all states
-            self.change_node_state(self.motor_client, Transition.TRANSITION_ACTIVATE)
             self.current_state = State.IDLE
 
         elif self.current_state == State.IDLE:
@@ -122,7 +118,6 @@ class StateMachineNode(LifecycleNode):
             )
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.camera_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.motor_client, Transition.TRANSITION_DEACTIVATE)
 
 
 def main(args=None):
