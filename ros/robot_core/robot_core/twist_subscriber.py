@@ -7,32 +7,32 @@ from smbus import SMBus
 
 
 class TwistSubscriber(Node):
-    DRIVE_REQUEST: bytes = b"\x01"
-    STOP_REQUEST: bytes = b"\x02"
+    DRIVE_REQUEST: bytes = b'\x01'
+    STOP_REQUEST: bytes = b'\x02'
 
     def __init__(self):
-        super().__init__("twist_subscriber")
+        super().__init__('twist_subscriber')
 
-        self.declare_parameter("wheel_dist", 0.175)
-        self.declare_parameter("counts_per_revolution", 480.0)
-        self.declare_parameter("wheel_radius", 0.04)
-        self.declare_parameter("max_counts_per_second", 900.0)
+        self.declare_parameter('wheel_dist', 0.175)
+        self.declare_parameter('counts_per_revolution', 480.0)
+        self.declare_parameter('wheel_radius', 0.04)
+        self.declare_parameter('max_counts_per_second', 900.0)
 
         self.subscription = self.create_subscription(
-            Twist, "/cmd_vel", self.twist_callback, 10
+            Twist, '/cmd_vel', self.twist_callback, 10
         )
 
         self.bus = SMBus(1)
         self.addr = 0x67
 
-        self.wheel_dist = self.get_parameter("wheel_dist").value
-        self.counts_per_revolution = self.get_parameter("counts_per_revolution").value
-        self.wheel_radius = self.get_parameter("wheel_radius").value
-        self.max_counts_per_second = self.get_parameter("max_counts_per_second").value
+        self.wheel_dist = self.get_parameter('wheel_dist').value
+        self.counts_per_revolution = self.get_parameter('counts_per_revolution').value
+        self.wheel_radius = self.get_parameter('wheel_radius').value
+        self.max_counts_per_second = self.get_parameter('max_counts_per_second').value
 
         self.speed_mult = self.counts_per_revolution / (self.wheel_radius * 2 * math.pi)
 
-        self.get_logger().info("Twist subscriber node started!")
+        self.get_logger().info('Twist subscriber node started!')
 
     def stop(self):
         self.bus.write_i2c_block_data(self.addr, self.STOP_REQUEST)
@@ -57,7 +57,7 @@ class TwistSubscriber(Node):
         linear_x_byte = int(linear_x) & 0xFF
         angular_z_byte = int(angular_z) & 0xFF
 
-        self.get_logger().info(f"Bytes: {linear_x_byte}, {angular_z_byte}")
+        self.get_logger().info(f'Bytes: {linear_x_byte}, {angular_z_byte}')
 
         self.bus.write_i2c_block_data(
             self.addr, self.DRIVE_REQUEST, [linear_x_byte, 0, angular_z_byte]
@@ -75,5 +75,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

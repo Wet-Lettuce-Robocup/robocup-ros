@@ -8,17 +8,17 @@ from smbus import SMBus
 
 
 class OdomPublisher(Node):
-    ENCODER_REQUEST: bytes = b"\x40"
-    ENCODER_RESPONSE: bytes = b"\x41"
+    ENCODER_REQUEST: bytes = b'\x40'
+    ENCODER_RESPONSE: bytes = b'\x41'
 
     def __init__(self):
-        super().__init__("odom_publisher")
+        super().__init__('odom_publisher')
 
-        self.declare_parameter("wheel_dist", 0.175)
-        self.declare_parameter("counts_per_revolution", 480.0)
-        self.declare_parameter("wheel_radius", 0.04)
+        self.declare_parameter('wheel_dist', 0.175)
+        self.declare_parameter('counts_per_revolution', 480.0)
+        self.declare_parameter('wheel_radius', 0.04)
 
-        self.publisher_ = self.create_publisher(Odometry, "odom", 10)
+        self.publisher_ = self.create_publisher(Odometry, 'odom', 10)
         self.timer = self.create_timer(0.1, self.publish_odom)  # 10 Hz
         self.start_time = self.get_clock().now()
 
@@ -36,9 +36,9 @@ class OdomPublisher(Node):
         self.addr = 0x67
         self.bus = SMBus(1)
 
-        self.wheel_dist = self.get_parameter("wheel_dist").value
-        self.counts_per_revolution = self.get_parameter("counts_per_revolution").value
-        self.wheel_radius = self.get_parameter("wheel_radius").value
+        self.wheel_dist = self.get_parameter('wheel_dist').value
+        self.counts_per_revolution = self.get_parameter('counts_per_revolution').value
+        self.wheel_radius = self.get_parameter('wheel_radius').value
 
         self.wheel_circumefrence = math.pi * (self.wheel_radius**2)
 
@@ -106,8 +106,8 @@ class OdomPublisher(Node):
 
         odom = Odometry()
         odom.header.stamp = current_time.to_msg()
-        odom.header.frame_id = "odom"
-        odom.child_frame_id = "base_link"
+        odom.header.frame_id = 'odom'
+        odom.child_frame_id = 'base_link'
 
         # Set the position
         odom.pose.pose.position = Point(x=self.x, y=self.y, z=0.0)
@@ -148,5 +148,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

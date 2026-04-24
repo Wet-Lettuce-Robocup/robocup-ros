@@ -38,10 +38,18 @@ class StateMachineNode(LifecycleNode):
         self.idle_button_pressed = False
 
         # Lifecycle service clients
-        self.line_follower_client = self.create_client(ChangeState, '/line_follower/change_state')
-        self.rescue_client = self.create_client(ChangeState, '/rescue_node/change_state')
-        self.camera_client = self.create_client(ChangeState, '/camera_node/change_state')
-        self.motor_client = self.create_client(ChangeState, '/motor_control/change_state')
+        self.line_follower_client = self.create_client(
+            ChangeState, '/line_follower/change_state'
+        )
+        self.rescue_client = self.create_client(
+            ChangeState, '/rescue_node/change_state'
+        )
+        self.camera_client = self.create_client(
+            ChangeState, '/camera_node/change_state'
+        )
+        self.motor_client = self.create_client(
+            ChangeState, '/motor_control/change_state'
+        )
 
         self.timer = self.create_timer(0.05, self.state_loop)
 
@@ -52,10 +60,12 @@ class StateMachineNode(LifecycleNode):
         rclpy.spin_until_future_complete(self, future)
 
     def on_configure(self, state: LifecycleState):
-        self.rescue_active_sub = self.create_subscription(Bool, '/rescue_active',
-                                                          self.rescue_active_callback, 10)
-        self.idle_button_sub = self.create_subscription(Bool, '/idle_button',
-                                                        self.idle_button_callback, 10)
+        self.rescue_active_sub = self.create_subscription(
+            Bool, '/rescue_active', self.rescue_active_callback, 10
+        )
+        self.idle_button_sub = self.create_subscription(
+            Bool, '/idle_button', self.idle_button_callback, 10
+        )
 
         return TransitionCallbackReturn.SUCCESS
 
@@ -67,6 +77,7 @@ class StateMachineNode(LifecycleNode):
 
     def state_loop(self):
         from lifecycle_msgs.msg import Transition
+
         if self.current_state == State.INIT:
             # Activate motor control for all states
             self.change_node_state(self.motor_client, Transition.TRANSITION_ACTIVATE)
@@ -74,27 +85,41 @@ class StateMachineNode(LifecycleNode):
 
         elif self.current_state == State.IDLE:
             if self.idle_button_pressed:
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
+                )
                 self.current_state = State.LINE_FOLLOWING
 
         elif self.idle_button_pressed:
-            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+            )
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
             if self.rescue_active:
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+                )
+                self.change_node_state(
+                    self.rescue_client, Transition.TRANSITION_ACTIVATE
+                )
 
         elif self.current_state == State.RESCUE:
             if not self.rescue_active:
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(
+                    self.rescue_client, Transition.TRANSITION_DEACTIVATE
+                )
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
+                )
 
         elif self.current_state == State.STOP:
             # Deactivate all nodes
-            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+            )
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.camera_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.motor_client, Transition.TRANSITION_DEACTIVATE)
