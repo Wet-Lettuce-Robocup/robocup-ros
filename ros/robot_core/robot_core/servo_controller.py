@@ -7,13 +7,16 @@ from std_msgs.msg import Float32
 
 
 class ServoController(Node):
-    """Node providing topics to allow for servos to be controlled over i2c.
+    """
+    Node providing topics to allow for servos to be controlled over i2c.
 
-    Attributes:
+    Attributes
+    ----------
         listen_topic (str): The topic subscribed to for angle commands. All angles are in radians.
         servo_id (int): The ID of the servo on the STM32 to be controlled.
         i2c_address (int): The I2C address of the STM32.
         servo_cmd (int): The command sent to the STM32 to set servos.
+
     """
 
     def __init__(self):
