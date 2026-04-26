@@ -29,6 +29,7 @@ setup(
         'console_scripts': [
             'twist_subscriber = robot_core.twist_subscriber:main',
             'odom_publisher = robot_core.odom_publisher:main',
+            'servo_controller = robot_core.servo_controller:main',
             'state_machine = robot_core.state_machine:main',
         ],
     },

@@ -1,3 +1,18 @@
+servo_grab:
+  ros__parameters:
+    listen_topic: "/servo/grab"
+    servo_id: 0
+
+servo_lift:
+  ros__parameters:
+    listen_topic: "/servo/lift"
+    servo_id: 1
+
+servo_tray_release:
+  ros__parameters:
+    listen_topic: "/servo/tray_release"
+    servo_id: 2
+
 bno08x_driver:
   ros__parameters:
     frame_id: "bno086" # The frame_id to use for the sensor data
