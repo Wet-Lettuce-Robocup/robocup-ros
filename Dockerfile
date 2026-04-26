@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y python3-pip git python3-jinja2 \
   python3-yaml python3-ply \
   libglib2.0-dev libgstreamer-plugins-base1.0-dev \
   python3-colcon-meson \
-  python3-smbus \
   ros-$ROS_DISTRO-robot-localization
 
 # Clone and build raspberrypi's libcamera fork
@@ -34,7 +33,8 @@ RUN source "/opt/ros/$ROS_DISTRO/setup.bash" \
   && rosdep install -y --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" --skip-keys=libcamera \
   && colcon build --event-handlers=console_direct+
 
-RUN apt-get update && apt-get install -y python3-gpiozero python3-serial \
+RUN apt-get update && apt-get install -y python3-serial python3-smbus \
+  python3-lgpio python3-gpiozero \
   python3-opencv
 
 COPY ./ros /app/src

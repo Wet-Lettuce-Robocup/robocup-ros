@@ -2,16 +2,19 @@ servo_grab:
   ros__parameters:
     listen_topic: "/servo/grab"
     servo_id: 0
+    gpio_pin: 4
 
 servo_lift:
   ros__parameters:
     listen_topic: "/servo/lift"
     servo_id: 1
+    gpio_pin: 0
 
 servo_tray_release:
   ros__parameters:
     listen_topic: "/servo/tray_release"
     servo_id: 2
+    gpio_pin: 1
 
 bno08x_driver:
   ros__parameters:
