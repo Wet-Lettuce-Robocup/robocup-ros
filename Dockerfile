@@ -37,12 +37,17 @@ RUN apt-get update && apt-get install -y python3-serial python3-smbus \
   python3-lgpio python3-gpiozero \
   python3-opencv
 
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+RUN pip3 install --no-cache-dir rpi5-ws2812
+
 COPY ./ros /app/src
 COPY docker_entrypoint.sh /app/
 
 WORKDIR /app
 
 RUN source /app/docker_entrypoint.sh \
+  && rosdep install -y --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" --skip-keys=libcamera \
   && colcon build --symlink-install
 
 ENV ROS_DOMAIN_ID=1
