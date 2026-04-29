@@ -30,14 +30,9 @@ class StatusLED(Node):
             LEDCommand, 'led_command', self.command_callback, 10
         )
 
-        self.led_colors: np.ndarray = np.full(
-            self.led_count, Color(0, 0, 0), dtype=Color
-        )
-
-        for i in range(self.led_count):
-            self.led_colors[i] = Color(0, 0, 0)
-
-        self.led_strip = WS2812SpiDriver(self.spi_bus, self.spi_device, self.led_count)
+        self.led_strip = WS2812SpiDriver(
+            self.spi_bus, self.spi_device, self.led_count
+        ).get_strip()
         self.led_strip.clear()
 
     @staticmethod
@@ -59,9 +54,8 @@ class StatusLED(Node):
 
         processed_color: Color = self.ColorRGBA_to_Color(color)
 
-        self.led_colors[index] = processed_color
-
-        self.led_strip.write(self.led_colors)
+        self.led_strip.set_pixel_color(index, processed_color)
+        self.led_strip.show()
 
     def cleanup(self):
         self.led_strip.clear()
