@@ -43,9 +43,9 @@ class StatusLED(Node):
     @staticmethod
     def ColorRGBA_to_Color(original: ColorRGBA) -> Color:
         color: Color = Color(
-            r=int(original.r * original.a * 255),
-            g=int(original.g * original.a * 255),
-            b=int(original.b * original.a * 255),
+            r=np.uint8(original.r * original.a * 255),
+            g=np.uint8(original.g * original.a * 255),
+            b=np.uint8(original.b * original.a * 255),
         )
 
         return color
