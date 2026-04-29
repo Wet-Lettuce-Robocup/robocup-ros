@@ -31,6 +31,7 @@ setup(
             'odom_publisher = robot_core.odom_publisher:main',
             'servo_controller = robot_core.servo_controller:main',
             'state_machine = robot_core.state_machine:main',
+            'status_led = robot_core.status_led:main',
         ],
     },
 )

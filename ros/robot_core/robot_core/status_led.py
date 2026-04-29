@@ -1,14 +1,13 @@
 import numpy as np
+import rclpy
 from rclpy.node import Node
-from rpi5_ws2812.ws2812 import Color, WS2812SpiDriver
 from robot_msgs.msg import LEDCommand
+from rpi5_ws2812.ws2812 import Color, WS2812SpiDriver
 from std_msgs.msg import ColorRGBA
 
 
 class StatusLED(Node):
-    """
-    Node for controlling WS2812 leds over SPI interface.
-    """
+    """Node for controlling WS2812 leds over SPI interface."""
 
     def __init__(self):
         super().__init__('status_led')
@@ -42,9 +41,11 @@ class StatusLED(Node):
         self.led_strip.clear()
 
     @staticmethod
-    def ColorRGBA_to_Color(input: ColorRGBA) -> Color:
+    def ColorRGBA_to_Color(original: ColorRGBA) -> Color:
         color: Color = Color(
-            r=input.r * input.a, g=input.g * input.a, b=input.b * input.a
+            r=original.r * original.a,
+            g=original.g * original.a,
+            b=original.b * original.a,
         )
 
         return color
@@ -61,3 +62,19 @@ class StatusLED(Node):
         self.led_colors[index] = processed_color
 
         self.led_strip.write(self.led_colors)
+
+    def cleanup(self):
+        self.led_strip.clear()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    status_led_node = StatusLED()
+    rclpy.spin(status_led_node)
+    status_led_node.cleanup()
+    status_led_node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

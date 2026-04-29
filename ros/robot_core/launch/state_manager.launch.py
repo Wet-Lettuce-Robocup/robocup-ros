@@ -79,6 +79,13 @@ def generate_launch_description():
                 parameters=[config],
             ),
             Node(
+                package='robot_core',
+                executable='status_led',
+                name='status_led',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='camera_ros',
                 executable='camera_node',
                 name='camera',
