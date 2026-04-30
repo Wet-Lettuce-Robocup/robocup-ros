@@ -4,7 +4,7 @@ from smbus2 import SMBus
 
 
 class I2CBusController(Node):
-    """Class for controlling I2C bus to prevent collisions"""
+    """Class for controlling I2C bus to prevent collisions."""
 
     def __init__(self):
         super().__init__('i2c_controller')
@@ -18,10 +18,10 @@ class I2CBusController(Node):
     ) -> I2CRead.Response:
         addr = request.device_address
         cmd = request.register_address
-        len = request.length
+        data_len = request.length
 
         try:
-            data = self.bus.read_i2c_block_data(addr, cmd, len)
+            data = self.bus.read_i2c_block_data(addr, cmd, data_len)
 
             response.success = True
             response.message = ''
