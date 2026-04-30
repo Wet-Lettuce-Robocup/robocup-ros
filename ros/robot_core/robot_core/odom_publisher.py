@@ -4,7 +4,8 @@ from geometry_msgs.msg import Point, Quaternion, Twist, Vector3
 from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.node import Node
-from smbus import SMBus
+from rclpy.task import Future
+from robot_msgs.srv import I2CRead
 
 
 class OdomPublisher(Node):
@@ -19,7 +20,8 @@ class OdomPublisher(Node):
         self.declare_parameter('wheel_radius', 0.04)
 
         self.publisher_ = self.create_publisher(Odometry, 'odom', 10)
-        self.timer = self.create_timer(0.1, self.publish_odom)  # 10 Hz
+        self.pub_timer = self.create_timer(0.1, self.publish_odom)  # 10 Hz
+        self.enc_timer = self.create_timer(0.1, self.request_enc)
         self.start_time = self.get_clock().now()
 
         self.last_enc_fl = 0.0
@@ -34,7 +36,20 @@ class OdomPublisher(Node):
         self.vth = 0.0  # rad/s
 
         self.addr = 0x67
-        self.bus = SMBus(1)
+        self.vel_cmd = 0x81
+        self.vel_len = 16
+        self.enc_cmd = 0x82
+        self.enc_len = 16
+
+        self.velocities: tuple[int, int, int, int] = 0, 0, 0, 0
+        self.encoders: tuple[int, int, int, int] = 0, 0, 0, 0
+
+        self.cli = self.create_client(I2CRead, 'i2c_read')
+        self.vel_future: Future[I2CRead.Response] | None = None
+        self.enc_future: Future[I2CRead.Response] | None = None
+
+        while not self.cli.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for I2C service...')
 
         self.wheel_dist = self.get_parameter('wheel_dist').value
         self.counts_per_revolution = self.get_parameter('counts_per_revolution').value
@@ -42,25 +57,69 @@ class OdomPublisher(Node):
 
         self.wheel_circumefrence = math.pi * (self.wheel_radius**2)
 
-    def get_vel(self):
-        vel_msg = self.bus.read_i2c_block_data(self.addr, 0x81, 16)
+    def request_vel(self):
+        request: I2CRead.Request = I2CRead.Request()
 
-        vel_fl = int.from_bytes(vel_msg[0:4], signed=True)
-        vel_fr = int.from_bytes(vel_msg[4:8], signed=True)
-        vel_bl = int.from_bytes(vel_msg[8:12], signed=True)
-        vel_br = int.from_bytes(vel_msg[12:16], signed=True)
+        request.device_address = self.addr
+        request.register_address = self.vel_cmd
+        request.length = self.vel_len
 
-        return vel_fl, vel_fr, vel_bl, vel_br
+        self.vel_future = self.cli.call_async(request)
+        self.vel_future.add_done_callback(self.vel_callback)
 
-    def get_encoders(self):
-        enc_msg = self.bus.read_i2c_block_data(self.addr, 0x82, 16)
+    def vel_callback(self, future: Future[I2CRead.Response]):
+        try:
+            response: I2CRead.Response | None = future.result()
 
-        enc_fl = int.from_bytes(enc_msg[0:4], signed=True)
-        enc_fr = int.from_bytes(enc_msg[4:8], signed=True)
-        enc_bl = int.from_bytes(enc_msg[8:12], signed=True)
-        enc_br = int.from_bytes(enc_msg[12:16], signed=True)
+            if response is None:
+                raise Exception('No response')
 
-        return enc_fl, enc_fr, enc_bl, enc_br
+            if not response.success:
+                raise Exception(response.message)
+
+            vel_msg = response.data
+
+            vel_fl = int.from_bytes(vel_msg[0:4], signed=True)
+            vel_fr = int.from_bytes(vel_msg[4:8], signed=True)
+            vel_bl = int.from_bytes(vel_msg[8:12], signed=True)
+            vel_br = int.from_bytes(vel_msg[12:16], signed=True)
+
+            self.velocities = vel_fl, vel_fr, vel_bl, vel_br
+
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
+
+    def request_enc(self):
+        request: I2CRead.Request = I2CRead.Request()
+
+        request.device_address = self.addr
+        request.register_address = self.enc_cmd
+        request.length = self.enc_len
+
+        self.enc_future = self.cli.call_async(request)
+        self.enc_future.add_done_callback(self.enc_callback)
+
+    def enc_callback(self, future: Future[I2CRead.Response]):
+        try:
+            response: I2CRead.Response | None = future.result()
+
+            if response is None:
+                raise Exception('No response')
+
+            if not response.success:
+                raise Exception(response.message)
+
+            enc_msg = response.data
+
+            enc_fl = int.from_bytes(enc_msg[0:4], signed=True)
+            enc_fr = int.from_bytes(enc_msg[4:8], signed=True)
+            enc_bl = int.from_bytes(enc_msg[8:12], signed=True)
+            enc_br = int.from_bytes(enc_msg[12:16], signed=True)
+
+            self.encoders = enc_fl, enc_fr, enc_bl, enc_br
+
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
 
     def publish_odom(self):
         current_time = self.get_clock().now()
@@ -73,12 +132,7 @@ class OdomPublisher(Node):
 
         # vel_fl, vel_fr, vel_bl, vel_br = vel_data
 
-        enc_data = self.get_encoders()
-
-        if enc_data is None:
-            return
-
-        enc_fl, enc_fr, enc_bl, enc_br = enc_data
+        enc_fl, enc_fr, enc_bl, enc_br = self.encoders
 
         d_l = (enc_fl - self.last_enc_fl + enc_bl - self.last_enc_bl) / 2
         self.last_enc_fl = enc_fl

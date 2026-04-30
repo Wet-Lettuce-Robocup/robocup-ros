@@ -24,8 +24,7 @@ RUN meson setup build --buildtype=release -Dpipelines=rpi/vc4,rpi/pisp -Dipas=rp
 # Clone and build the camera_ros node
 WORKDIR /app/src
 
-RUN git clone https://github.com/christianrauch/camera_ros.git \
-  && git clone https://github.com/bnbhat/bno08x-ros2-driver.git
+RUN git clone https://github.com/christianrauch/camera_ros.git
 
 WORKDIR /app
 
@@ -33,7 +32,7 @@ RUN source "/opt/ros/$ROS_DISTRO/setup.bash" \
   && rosdep install -y --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" --skip-keys=libcamera \
   && colcon build --event-handlers=console_direct+
 
-RUN apt-get update && apt-get install -y python3-serial python3-smbus \
+RUN apt-get update && apt-get install -y python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv
 

@@ -1,0 +1,10 @@
+# Request
+uint8 device_address
+uint8 register_address        # Register to read from (most BNO08x operations need this)
+uint8 length                  # Number of bytes to read
+
+---
+# Response
+uint8[] data
+bool success
+string message

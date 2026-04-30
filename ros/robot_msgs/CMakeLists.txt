@@ -16,7 +16,9 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/LEDCommand.msg"
-  DEPENDENCIES std_msgs
+  "srv/I2CRead.srv"
+  "srv/I2CWrite.srv"
+  DEPENDENCIES std_msgs builtin_interfaces
 )
 
 if(BUILD_TESTING)

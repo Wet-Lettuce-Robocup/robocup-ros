@@ -3,7 +3,8 @@ import math
 from gpiozero import OutputDevice
 import rclpy
 from rclpy.node import Node
-from smbus import SMBus
+from rclpy.task import Future
+from robot_msgs.srv import I2CWrite
 from std_msgs.msg import Float32
 
 
@@ -46,8 +47,12 @@ class ServoController(Node):
         )
 
         self.create_subscription(Float32, self.listen_topic, self.servo_callback, 10)
+        self.cli = self.create_client(I2CWrite, 'i2c_write')
+        self.future: Future[I2CWrite.Response] | None = None
 
-        self.bus = SMBus(1)
+        while not self.cli.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for I2C service...')
+
         self.gpio_device = OutputDevice(
             self.gpio_pin, active_high=True, initial_value=False
         )
@@ -60,11 +65,29 @@ class ServoController(Node):
         degrees = int(self.rads_to_degrees(msg.data))
         degrees = min(max(degrees, 0), 180) & 0xFF
 
-        self.bus.write_i2c_block_data(
-            self.i2c_address, self.servo_cmd, [self.servo_id, degrees]
-        )
+        request = I2CWrite.Request()
+
+        request.device_address = self.i2c_address
+        request.register_address = self.servo_cmd
+        request.data = [self.servo_id, degrees]
+
+        self.future = self.cli.call_async(request)
+        self.future.add_done_callback(self.i2c_callback)
 
         self.gpio_device.on()
+
+    def i2c_callback(self, future: Future[I2CWrite.Response]):
+        try:
+            response: I2CWrite.Response | None = future.result()
+
+            if response is None:
+                raise Exception('No response')
+
+            if not response.success:
+                raise Exception(response.message)
+
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
 
     def cleanup(self):
         self.gpio_device.off()

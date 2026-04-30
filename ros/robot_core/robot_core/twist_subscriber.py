@@ -3,7 +3,8 @@ import math
 from geometry_msgs.msg import Twist
 import rclpy
 from rclpy.node import Node
-from smbus import SMBus
+from rclpy.task import Future
+from robot_msgs.srv import I2CWrite
 
 
 class TwistSubscriber(Node):
@@ -22,8 +23,12 @@ class TwistSubscriber(Node):
             Twist, '/cmd_vel', self.twist_callback, 10
         )
 
-        self.bus = SMBus(1)
         self.addr = 0x67
+        self.cli = self.create_client(I2CWrite, 'i2c_write')
+        self.future: Future[I2CWrite.Response] | None = None
+
+        while not self.cli.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for I2C service...')
 
         self.wheel_dist = self.get_parameter('wheel_dist').value
         self.counts_per_revolution = self.get_parameter('counts_per_revolution').value
@@ -35,7 +40,14 @@ class TwistSubscriber(Node):
         self.get_logger().info('Twist subscriber node started!')
 
     def stop(self):
-        self.bus.write_i2c_block_data(self.addr, self.STOP_REQUEST)
+        request: I2CWrite.Request = I2CWrite.Request()
+
+        request.device_address = self.addr
+        request.register_address = self.STOP_REQUEST
+        request.data = []
+
+        self.future = self.cli.call_async(request)
+        self.future.add_done_callback(self.i2c_callback)
 
     def twist_callback(self, msg):
         linear_x = int(
@@ -57,11 +69,27 @@ class TwistSubscriber(Node):
         linear_x_byte = int(linear_x) & 0xFF
         angular_z_byte = int(angular_z) & 0xFF
 
-        self.get_logger().info(f'Bytes: {linear_x_byte}, {angular_z_byte}')
+        request: I2CWrite.Request = I2CWrite.Request()
 
-        self.bus.write_i2c_block_data(
-            self.addr, self.DRIVE_REQUEST, [linear_x_byte, 0, angular_z_byte]
-        )
+        request.device_address = self.addr
+        request.register_address = self.DRIVE_REQUEST
+        request.data = [linear_x_byte, 0, angular_z_byte]
+
+        self.future = self.cli.call_async(request)
+        self.future.add_done_callback(self.i2c_callback)
+
+    def i2c_callback(self, future: Future[I2CWrite.Response]):
+        try:
+            response: I2CWrite.Response | None = future.result()
+
+            if response is None:
+                raise Exception('No response')
+
+            if not response.success:
+                raise Exception(response.message)
+
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
 
     def __del__(self):
         self.stop()
