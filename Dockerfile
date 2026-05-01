@@ -34,7 +34,7 @@ RUN source "/opt/ros/$ROS_DISTRO/setup.bash" \
 
 RUN apt-get update && apt-get install -y python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
-  python3-opencv
+  python3-opencv python3-luma.oled python3-pil
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 

@@ -15,7 +15,13 @@ class I2CBusController(Node):
 
     def __init__(self):
         super().__init__('i2c_controller')
-        self.bus = SMBus(1)
+
+        try:
+            self.bus = SMBus(1)
+
+        except OSError as e:
+            self.get_logger().fatal(f'Failed to initialize I2C device! {e}')
+            return
 
         self.read_srv = self.create_service(I2CRead, 'i2c_read', self.handle_read)
         self.write_srv = self.create_service(I2CWrite, 'i2c_write', self.handle_write)

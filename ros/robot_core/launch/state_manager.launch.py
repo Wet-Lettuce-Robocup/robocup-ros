@@ -93,6 +93,13 @@ def generate_launch_description():
                 parameters=[config],
             ),
             Node(
+                package='robot_core',
+                executable='oled_controller',
+                name='oled_controller',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='camera_ros',
                 executable='camera_node',
                 name='camera',
