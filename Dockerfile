@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y python3-serial python3-smbus2 \
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
-RUN pip3 install --no-cache-dir rpi5-ws2812
+RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 vl53l5cx-ctypes
 
 COPY ./ros /app/src
 COPY docker_entrypoint.sh /app/

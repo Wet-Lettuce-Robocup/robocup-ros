@@ -1,17 +1,54 @@
+from gpiozero import OutputDevice
+import rclpy
 from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
+from std_msgs.msg import Int32
+from vl53l5cx_ctypes import VL53L5CX
 
 
 class I2CBusController(Node):
     """Class for controlling I2C bus to prevent collisions."""
 
+    ULTRASONIC_ADDR = 0x67
+    ULTRASONIC_CMD = 0x83
+
     def __init__(self):
         super().__init__('i2c_controller')
         self.bus = SMBus(1)
 
-        self.create_service(I2CRead, 'i2c_read', self.handle_read)
-        self.create_service(I2CWrite, 'i2c_write', self.handle_write)
+        self.read_srv = self.create_service(I2CRead, 'i2c_read', self.handle_read)
+        self.write_srv = self.create_service(I2CWrite, 'i2c_write', self.handle_write)
+
+        self.claw_tof_pub = self.create_publisher(Int32, 'tof/claw', 10)
+        self.right_tof_pub = self.create_publisher(Int32, 'tof/right', 10)
+        self.front_tof_pub = self.create_publisher(Int32, 'tof/front', 10)
+        self.ultrasonic_pub = self.create_publisher(Int32, 'ultrasonic', 10)
+
+        self.claw_tof_en = OutputDevice(20, active_high=True, initial_value=False)
+        self.right_tof_en = OutputDevice(19, active_high=True, initial_value=False)
+        self.front_tof_en = OutputDevice(7, active_high=True, initial_value=False)
+
+        self.claw_tof_addr = 0x30
+        self.right_tof_addr = 0x31
+        self.front_tof_addr = 0x32
+
+        self.claw_tof_en.on()
+        self.claw_tof = VL53L5CX()
+        self.claw_tof.set_i2c_address(self.claw_tof_addr)
+        self.claw_tof.start_ranging()
+
+        self.right_tof_en.on()
+        self.right_tof = VL53L5CX()
+        self.right_tof.set_i2c_address(self.right_tof_addr)
+        self.right_tof.start_ranging()
+
+        self.front_tof_en.on()
+        self.front_tof = VL53L5CX()
+        self.front_tof.set_i2c_address(self.front_tof_addr)
+        self.front_tof.start_ranging()
+
+        self.timer = self.create_timer(0.1, self.timer_callback)
 
     def handle_read(
         self, request: I2CRead.Request, response: I2CRead.Response
@@ -52,3 +89,51 @@ class I2CBusController(Node):
             response.message = e
 
         return response
+
+    def read_ultrasonic(self) -> int | None:
+        try:
+            msg = self.bus.read_i2c_block_data(
+                self.ULTRASONIC_ADDR, self.ULTRASONIC_CMD, 4
+            )
+
+            dist: int = int.from_bytes(msg)
+
+            return dist
+
+        except IOError as e:
+            self.get_logger().error(f'I2C read failed! {e}')
+
+    def timer_callback(self):
+        claw_dist: int = self.claw_tof.get_data().distance_mm
+        right_dist: int = self.claw_tof.get_data().distance_mm
+        front_dist: int = self.front_tof.get_data().distance_mm
+
+        msg = Int32()
+        msg.data = claw_dist
+        self.claw_tof_pub.publish(msg)
+
+        msg.data = right_dist
+        self.right_tof_pub.publish(msg)
+
+        msg.data = front_dist
+        self.front_tof_pub.publish(msg)
+
+        ultrasonic_dist: int | None = self.read_ultrasonic()
+
+        if ultrasonic_dist is None:
+            return
+
+        msg.data = ultrasonic_dist
+        self.ultrasonic_pub.publish(msg)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = I2CBusController()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

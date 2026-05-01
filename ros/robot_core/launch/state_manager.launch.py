@@ -36,6 +36,13 @@ def generate_launch_description():
                 ],
             ),
             Node(
+                package='robot_core',
+                executable='i2c_controller',
+                name='i2c_controller',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='bno08x_driver',
                 executable='bno08x_driver',
                 name='bno08x_driver',

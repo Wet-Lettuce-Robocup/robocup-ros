@@ -32,6 +32,7 @@ setup(
             'servo_controller = robot_core.servo_controller:main',
             'state_machine = robot_core.state_machine:main',
             'status_led = robot_core.status_led:main',
+            'i2c_controller = robot_core.i2c_controller:main',
         ],
     },
 )
