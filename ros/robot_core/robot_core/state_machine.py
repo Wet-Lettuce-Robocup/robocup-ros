@@ -1,9 +1,9 @@
 from enum import Enum
 
+from gpiozero import OutputDevice
 from lifecycle_msgs.srv import ChangeState
 import rclpy
-from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
-from rclpy.lifecycle import State as LifecycleState
+from rclpy.node import Node
 from std_msgs.msg import Bool
 
 
@@ -15,7 +15,7 @@ class State(Enum):
     STOP = 4
 
 
-class StateMachineNode(LifecycleNode):
+class StateMachineNode(Node):
     """
     Switches between line follow, rescue and idle states.
 
@@ -31,11 +31,16 @@ class StateMachineNode(LifecycleNode):
     def __init__(self):
         super().__init__('state_machine')
         self.current_state = State.INIT
-        self.rescue_active_sub = None
-        self.idle_button_sub = None
 
         self.rescue_active = False
         self.idle_button_pressed = False
+
+        self.rescue_active_sub = self.create_subscription(
+            Bool, '/rescue_active', self.rescue_active_callback, 10
+        )
+        self.idle_button_sub = self.create_subscription(
+            Bool, '/idle_button', self.idle_button_callback, 10
+        )
 
         # Lifecycle service clients
         self.line_follower_client = self.create_client(
@@ -48,6 +53,9 @@ class StateMachineNode(LifecycleNode):
             ChangeState, '/camera_node/change_state'
         )
 
+        self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
+        self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
+
         self.timer = self.create_timer(0.05, self.state_loop)
 
     def change_node_state(self, client, transition_id):
@@ -55,16 +63,6 @@ class StateMachineNode(LifecycleNode):
         req.transition.id = transition_id  # e.g., Transition.TRANSITION_ACTIVATE
         future = client.call_async(req)
         rclpy.spin_until_future_complete(self, future)
-
-    def on_configure(self, state: LifecycleState):
-        self.rescue_active_sub = self.create_subscription(
-            Bool, '/rescue_active', self.rescue_active_callback, 10
-        )
-        self.idle_button_sub = self.create_subscription(
-            Bool, '/idle_button', self.idle_button_callback, 10
-        )
-
-        return TransitionCallbackReturn.SUCCESS
 
     def rescue_active_callback(self, msg):
         self.rescue_active = msg.data
@@ -124,4 +122,5 @@ def main(args=None):
     rclpy.init(args=args)
     node = StateMachineNode()
     rclpy.spin(node)
+    node.destroy_node()
     rclpy.shutdown()

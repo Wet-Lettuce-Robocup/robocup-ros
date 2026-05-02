@@ -2,7 +2,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch_ros.actions import LifecycleNode, Node
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -113,7 +113,7 @@ def generate_launch_description():
                 output='screen',
                 parameters=[config],
             ),
-            LifecycleNode(
+            Node(
                 package='robot_core',
                 executable='state_machine',
                 name='state_machine',

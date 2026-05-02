@@ -4,7 +4,7 @@ from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
 from std_msgs.msg import Int32
-from vl53l5cx_ctypes import VL53L5CX
+# from vl53l5cx_ctypes import VL53L5CX
 
 
 class I2CBusController(Node):
@@ -39,20 +39,20 @@ class I2CBusController(Node):
         self.right_tof_addr = 0x31
         self.front_tof_addr = 0x32
 
-        self.claw_tof_en.on()
-        self.claw_tof = VL53L5CX()
-        self.claw_tof.set_i2c_address(self.claw_tof_addr)
-        self.claw_tof.start_ranging()
-
-        self.right_tof_en.on()
-        self.right_tof = VL53L5CX()
-        self.right_tof.set_i2c_address(self.right_tof_addr)
-        self.right_tof.start_ranging()
-
-        self.front_tof_en.on()
-        self.front_tof = VL53L5CX()
-        self.front_tof.set_i2c_address(self.front_tof_addr)
-        self.front_tof.start_ranging()
+        # self.claw_tof_en.on()
+        # self.claw_tof = VL53L5CX()
+        # self.claw_tof.set_i2c_address(self.claw_tof_addr)
+        # self.claw_tof.start_ranging()
+        #
+        # self.right_tof_en.on()
+        # self.right_tof = VL53L5CX()
+        # self.right_tof.set_i2c_address(self.right_tof_addr)
+        # self.right_tof.start_ranging()
+        #
+        # self.front_tof_en.on()
+        # self.front_tof = VL53L5CX()
+        # self.front_tof.set_i2c_address(self.front_tof_addr)
+        # self.front_tof.start_ranging()
 
         self.timer = self.create_timer(0.1, self.timer_callback)
 
@@ -110,19 +110,19 @@ class I2CBusController(Node):
             self.get_logger().error(f'I2C read failed! {e}')
 
     def timer_callback(self):
-        claw_dist: int = self.claw_tof.get_data().distance_mm
-        right_dist: int = self.claw_tof.get_data().distance_mm
-        front_dist: int = self.front_tof.get_data().distance_mm
+        # claw_dist: int = self.claw_tof.get_data().distance_mm
+        # right_dist: int = self.claw_tof.get_data().distance_mm
+        # front_dist: int = self.front_tof.get_data().distance_mm
 
         msg = Int32()
-        msg.data = claw_dist
-        self.claw_tof_pub.publish(msg)
-
-        msg.data = right_dist
-        self.right_tof_pub.publish(msg)
-
-        msg.data = front_dist
-        self.front_tof_pub.publish(msg)
+        # msg.data = claw_dist
+        # self.claw_tof_pub.publish(msg)
+        #
+        # msg.data = right_dist
+        # self.right_tof_pub.publish(msg)
+        #
+        # msg.data = front_dist
+        # self.front_tof_pub.publish(msg)
 
         ultrasonic_dist: int | None = self.read_ultrasonic()
 
