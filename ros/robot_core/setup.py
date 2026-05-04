@@ -35,6 +35,7 @@ setup(
             'i2c_controller = robot_core.i2c_controller:main',
             'oled_controller = robot_core.oled_controller:main',
             'button_publisher = robot_core.button_publisher:main',
+            'pwm_controller = robot_core.pwm_controller:main',
         ],
     },
 )
