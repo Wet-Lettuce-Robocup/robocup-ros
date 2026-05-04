@@ -22,6 +22,16 @@ idle_button:
     publish_topic: "/idle_button"
     pull_up: True
 
+/camera_front:
+  camera_node:
+    ros__parameters:
+      camera_id: 1
+
+/camera_down:
+  camera_node:
+    ros__parameters:
+      camera_id: 0
+
 bno08x_driver:
   ros__parameters:
     frame_id: "bno086" # The frame_id to use for the sensor data

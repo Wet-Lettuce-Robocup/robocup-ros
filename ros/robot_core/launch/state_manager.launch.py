@@ -109,7 +109,16 @@ def generate_launch_description():
             Node(
                 package='camera_ros',
                 executable='camera_node',
-                name='camera',
+                name='camera_node',
+                namespace='front_camera',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='camera_ros',
+                executable='camera_node',
+                name='camera_node',
+                namespace='down_camera',
                 output='screen',
                 parameters=[config],
             ),
