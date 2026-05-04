@@ -33,7 +33,7 @@ class StateMachineNode(Node):
         self.current_state = State.INIT
 
         self.rescue_active = False
-        self.idle_button_pressed = False
+        self.idle_toggle = True
 
         self.rescue_active_sub = self.create_subscription(
             Bool, '/rescue_active', self.rescue_active_callback, 10
@@ -67,8 +67,9 @@ class StateMachineNode(Node):
     def rescue_active_callback(self, msg):
         self.rescue_active = msg.data
 
-    def idle_button_callback(self, msg):
-        self.idle_button_pressed = msg.data
+    def idle_button_callback(self, msg: Bool):
+        if not msg.data:
+            self.idle_toggle = not self.idle_toggle
 
     def state_loop(self):
         from lifecycle_msgs.msg import Transition
@@ -78,13 +79,13 @@ class StateMachineNode(Node):
             self.current_state = State.IDLE
 
         elif self.current_state == State.IDLE:
-            if self.idle_button_pressed:
+            if not self.idle_toggle:
                 self.change_node_state(
                     self.line_follower_client, Transition.TRANSITION_ACTIVATE
                 )
                 self.current_state = State.LINE_FOLLOWING
 
-        elif self.idle_button_pressed:
+        elif self.idle_toggle:
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE
             )
@@ -124,3 +125,7 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

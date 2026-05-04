@@ -34,6 +34,7 @@ setup(
             'status_led = robot_core.status_led:main',
             'i2c_controller = robot_core.i2c_controller:main',
             'oled_controller = robot_core.oled_controller:main',
+            'button_publisher = robot_core.button_publisher:main',
         ],
     },
 )

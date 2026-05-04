@@ -100,6 +100,13 @@ def generate_launch_description():
                 parameters=[config],
             ),
             Node(
+                package='robot_core',
+                executable='button_publisher',
+                name='idle_button',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='camera_ros',
                 executable='camera_node',
                 name='camera',

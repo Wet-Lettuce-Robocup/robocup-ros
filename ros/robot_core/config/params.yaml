@@ -16,6 +16,12 @@ servo_tray_release:
     servo_id: 2
     gpio_pin: 1
 
+idle_button:
+  ros__parameters:
+    gpio_pin: 6
+    publish_topic: "/idle_button"
+    pull_up: True
+
 bno08x_driver:
   ros__parameters:
     frame_id: "bno086" # The frame_id to use for the sensor data
