@@ -26,11 +26,15 @@ class PWMController(Node):
         )
 
         self.chip_path = os.path.join('/sys/class/pwm', f'pwmchip{self.pwm_chip}')
-
-        with open(os.path.join(self.chip_path, 'export'), 'w') as f:
-            f.write(str(self.pwm_channel))
-
         self.channel_path = os.path.join(self.chip_path, f'pwm{self.pwm_channel}')
+
+        if os.path.isdir(self.channel_path):
+            with open(os.path.join(self.channel_path, 'enable'), 'w') as f:
+                f.write('0')
+
+        else:
+            with open(os.path.join(self.chip_path, 'export'), 'w') as f:
+                f.write(str(self.pwm_channel))
 
         self.enable_sub = self.create_subscription(
             Bool, f'{self.subscribe_topic}/enable', self.enable_callback, 10
@@ -42,6 +46,8 @@ class PWMController(Node):
             Int32, f'{self.subscribe_topic}/duty_cycle', self.duty_cycle_callback, 10
         )
 
+        self.period = 0
+
     def enable_callback(self, msg: Bool) -> None:
         with open(os.path.join(self.channel_path, 'enable'), 'w') as f:
             f.write(str(int(msg.data)))
@@ -49,10 +55,15 @@ class PWMController(Node):
     def period_callback(self, msg: Int32) -> None:
         with open(os.path.join(self.channel_path, 'period'), 'w') as f:
             f.write(str(msg.data))
+            self.period = msg.data
 
     def duty_cycle_callback(self, msg: Int32) -> None:
+        duty_cycle = msg.data
+        if duty_cycle > self.period:
+            duty_cycle = self.period
+
         with open(os.path.join(self.channel_path, 'duty_cycle'), 'w') as f:
-            f.write(str(msg.data))
+            f.write(str(duty_cycle))
 
 
 def main(args=None):
