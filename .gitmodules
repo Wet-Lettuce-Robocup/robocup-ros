@@ -7,3 +7,6 @@
 [submodule "ros/toby-software-rescue"]
 	path = ros/toby-software-rescue
 	url = https://github.com/Wet-Lettuce-Robocup/toby-software-rescue
+[submodule "ros/bno08x_ros2_driver"]
+	path = ros/bno08x_ros2_driver
+	url = https://github.com/Wet-Lettuce-Robocup/bno08x_ros2_driver

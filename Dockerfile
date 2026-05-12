@@ -33,8 +33,13 @@ RUN source "/opt/ros/$ROS_DISTRO/setup.bash" \
   && rosdep install -y --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" --skip-keys=libcamera \
   && colcon build --event-handlers=console_direct+
 
-RUN apt-get update && apt-get install -y python3-gpiozero python3-serial \
-  python3-opencv
+RUN apt-get update && apt-get install -y python3-serial python3-smbus2 \
+  python3-lgpio python3-gpiozero \
+  python3-opencv python3-luma.oled python3-pil
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 vl53l5cx-ctypes
 
 COPY ./ros /app/src
 COPY docker_entrypoint.sh /app/
@@ -42,6 +47,7 @@ COPY docker_entrypoint.sh /app/
 WORKDIR /app
 
 RUN source /app/docker_entrypoint.sh \
+  && rosdep install -y --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" --skip-keys=libcamera \
   && colcon build --symlink-install
 
 ENV ROS_DOMAIN_ID=1
