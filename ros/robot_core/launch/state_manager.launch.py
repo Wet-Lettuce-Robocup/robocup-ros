@@ -2,7 +2,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch_ros.actions import LifecycleNode, Node
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -17,20 +17,57 @@ def generate_launch_description():
                 executable='static_transform_publisher',
                 name='imu_static_tf',
                 arguments=[
+                    '--x',
                     '0',
+                    '--y',
                     '0',
+                    '--z',
                     '0',  # x y z
+                    '--roll',
                     '0',
+                    '--pitch',
                     '0',
+                    '--yaw',
                     '0',  # roll pitch yaw
+                    '--frame-id',
                     'base_link',
+                    '--child-frame-id',
                     'imu_link',
                 ],
             ),
             Node(
-                package='robot_localization',
-                executable='ekf_node',
-                name='ekf_filter_node',
+                package='robot_core',
+                executable='i2c_controller',
+                name='i2c_controller',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='bno08x_driver',
+                executable='bno08x_driver',
+                name='bno08x_driver',
+                output='screen',
+                parameters=[config],
+            ),
+            # Servos
+            Node(
+                package='robot_core',
+                executable='servo_controller',
+                name='servo_grab',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='robot_core',
+                executable='servo_controller',
+                name='servo_lift',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='robot_core',
+                executable='servo_controller',
+                name='servo_tray_release',
                 output='screen',
                 parameters=[config],
             ),
@@ -49,20 +86,50 @@ def generate_launch_description():
                 parameters=[config],
             ),
             Node(
-                package='camera_ros',
-                executable='camera_node',
-                name='camera',
+                package='robot_core',
+                executable='status_led',
+                name='status_led',
                 output='screen',
                 parameters=[config],
             ),
             Node(
-                package='bno08x_driver',
-                executable='bno08x_driver',
-                name='bno08x_driver',
+                package='robot_core',
+                executable='oled_controller',
+                name='oled_controller',
                 output='screen',
                 parameters=[config],
             ),
-            LifecycleNode(
+            Node(
+                package='robot_core',
+                executable='button_publisher',
+                name='idle_button',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='camera_ros',
+                executable='camera_node',
+                name='camera_node',
+                namespace='front_camera',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='camera_ros',
+                executable='camera_node',
+                name='camera_node',
+                namespace='down_camera',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='robot_localization',
+                executable='ekf_node',
+                name='ekf_filter_node',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='robot_core',
                 executable='state_machine',
                 name='state_machine',
