@@ -6,8 +6,8 @@ from std_msgs.msg import Bool, Int32
 
 
 class FanController(Node):
-    
     """Node for controlling fan with ros2.
+
     - Subscribed to fan/target_speed (Int32, 0-100%)
     - RPM is sampled over 3 seconds and published as percentage to fan/speed (Int32, 0-100%)
     """
@@ -71,7 +71,8 @@ class FanController(Node):
     def calculate_speed(self) -> None:
         freq = self.get_frequency()
         rpm = (freq * 60) / self.PULSES_PER_REV
-        self.current_speed = int((rpm / self.MAX_RPM) * 100)  # convert to percentage of max speed (2000 RPM)
+        # convert to percentage of max speed (2000 RPM)
+        self.current_speed = int((rpm / self.MAX_RPM) * 100)  
 
     def get_frequency(self) -> int:
         count = 0
@@ -82,11 +83,11 @@ class FanController(Node):
                 count += 1
                 while self.tach.is_active:  # wait for the signal to go low
                     pass
-                
+
         hz = count / 3.0  # /3s for Hz
         return hz
-    
-    def check_working(self) -> None:  
+
+    def check_working(self) -> None:
         # for debugging, check if fan is working by comparing target and current speed
         self.calculate_speed()
         if self.current_speed > 0:
@@ -96,5 +97,7 @@ class FanController(Node):
                 self.get_logger().warn('target is not close to current speed')
         else:
             self.get_logger().warn('fan speed is 0')
-        self.get_logger().info(f'target speed: {self.target_speed}% | current speed: {self.current_speed}%')
+        self.get_logger().info(
+            f'target speed: {self.target_speed}% | current speed: {self.current_speed}%'
+            )
         return
