@@ -6,7 +6,8 @@ from std_msgs.msg import Bool, Int32
 
 
 class FanController(Node):
-    """Node for controlling fan with ros2.
+    """
+    Node for controlling fan with ros2.
 
     - Subscribed to fan/target_speed (Int32, 0-100%)
     - RPM is sampled over 3 seconds and published as percentage to fan/speed (Int32, 0-100%)
