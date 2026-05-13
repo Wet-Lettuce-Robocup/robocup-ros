@@ -1,11 +1,14 @@
+from math import isclose
+
 from gpiozero import DigitalInputDevice
 from rclpy.node import Node
 from std_msgs.msg import Bool, Int32
-from math import isclose
 
 
 class FanController(Node):
-    """Node for controlling fan with ros2.
+    """
+    Node for controlling fan with ros2.
+
     - Subscribed to fan/target_speed (Int32, 0-100%)
     - RPM is sampled over 3 seconds and published as percentage to fan/speed (Int32, 0-100%)
     """
@@ -18,11 +21,11 @@ class FanController(Node):
     def __init__(self) -> None:
         super().__init__('fan_controller')
 
-        self.target_speed_sub = self.create_subscription( # should be int from 0-100 (%)
+        self.target_speed_sub = self.create_subscription(  # should be int from 0-100 (%)
             Int32, 'fan/target_speed', self.target_rpm_callback, 10
         )
 
-        #publishers for pwm controller
+        # publishers for pwm controller
         self.enable_pub = self.create_publisher(
             Bool, f'/pwm{self.PWM_CHANNEL}/enable', 10
         )
@@ -33,16 +36,16 @@ class FanController(Node):
             Int32, f'/pwm{self.PWM_CHANNEL}/duty_cycle', 10
         )
 
-        #percentage speed publisher
+        # percentage speed publisher
         self.speed_pub = self.create_publisher(Int32, 'fan/speed', 10)
 
-        #setup tachometer input
+        # setup tachometer input
         self.tach = DigitalInputDevice(self.TACH_PIN)
 
         self.target_speed = 0
         self.current_speed = 0
 
-        #timer to calculate speed every second
+        # timer to calculate speed every second
         self.create_timer(1.0, self.calculate_speed)
 
     def target_rpm_callback(self, msg: Int32) -> None:
@@ -65,7 +68,7 @@ class FanController(Node):
         self.period_pub.publish(Int32(data=100000))
         self.duty_cycle_pub.publish(Int32(data=int((target_speed/100) * 100000))) # convert percentage to duty cycle (0-100000) for 100kHz period
         return
-    
+
     def calculate_speed(self) -> None:
         freq = self.get_frequency()
         rpm = (freq * 60) / self.PULSES_PER_REV
@@ -79,15 +82,16 @@ class FanController(Node):
         start_time = self.get_clock().now()
 
         while (self.get_clock().now() - start_time).seconds < 3.0:
-            if self.tach.is_active: # wait for the signal to go high
+            if self.tach.is_active:  # wait for the signal to go high
                 count += 1
                 while self.tach.is_active:  # wait for the signal to go low
                     pass
 
         hz = count / 3.0  # /3s for Hz
         return hz
-    
-    def check_working(self) -> None: #for debugging, check if fan is working by comparing target and current speed
+
+    def check_working(self) -> None:
+        # for debugging, check if fan is working by comparing target and current speed
         self.calculate_speed()
         if self.current_speed > 0:
             if isclose(self.current_speed, self.target_speed, abs_tol=10):
@@ -96,5 +100,7 @@ class FanController(Node):
                 self.get_logger().warn('target is not close to current speed')
         else:
             self.get_logger().warn('fan speed is 0')
-        
-        self.get_logger().info(f'target speed: {self.target_speed}% | current speed: {self.current_speed}%')
+        self.get_logger().info(
+            f'target speed: {self.target_speed}% | current speed: {self.current_speed}%'
+            )
+        return
