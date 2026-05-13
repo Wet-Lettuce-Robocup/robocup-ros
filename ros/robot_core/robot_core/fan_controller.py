@@ -16,12 +16,13 @@ class FanController(Node):
     PWM_CHANNEL = 0
     TACH_PIN = 11
     PULSES_PER_REV = 2
-    MAX_RPM = 2000 #min 450
+    MAX_RPM = 2000  # min 450
 
     def __init__(self) -> None:
         super().__init__('fan_controller')
 
-        self.target_speed_sub = self.create_subscription(  # should be int from 0-100 (%)
+        self.target_speed_sub = self.create_subscription(
+            # should be int from 0-100 (%)
             Int32, 'fan/target_speed', self.target_rpm_callback, 10
         )
 
@@ -45,8 +46,8 @@ class FanController(Node):
         self.target_speed = 0
         self.current_speed = 0
 
-        # timer to calculate speed every 5 seconds 
-        self.create_timer(5, self.calculate_speed)         
+        # timer to calculate speed every 5 seconds
+        self.create_timer(5, self.calculate_speed)
 
     def target_rpm_callback(self, msg: Int32) -> None:
         target_speed = msg.data
@@ -66,16 +67,21 @@ class FanController(Node):
 
         self.enable_pub.publish(Bool(data=True))
         self.period_pub.publish(Int32(data=100000))
-        self.duty_cycle_pub.publish(Int32(data=int((target_speed/100) * 100000))) # convert percentage to duty cycle (0-100000) for 100kHz period
+
+        # convert percentage to duty cycle (0-100000) for 100kHz period
+        self.duty_cycle_pub.publish(Int32(data=int((target_speed/100) * 100000)))
         return
 
     def calculate_speed(self) -> None:
         freq = self.get_frequency()
         rpm = (freq * 60) / self.PULSES_PER_REV
         if rpm <= 1:
-            self.set_fan_speed(0) # if fan is stopped, set target to 0 to prevent excess current draw
+            # if fan is stopped, set target to 0 to prevent excess current draw
+            self.set_fan_speed(0)
+
             self.get_logger().warn('Fan is stalling, disabling fan')
-        self.current_speed = int((rpm / self.MAX_RPM) * 100) # convert to percentage of max speed (2000 RPM)
+        self.current_speed = int((rpm / self.MAX_RPM) * 100)
+        # convert to percentage of max speed (2000 RPM)
 
     def get_frequency(self) -> int:
         count = 0
