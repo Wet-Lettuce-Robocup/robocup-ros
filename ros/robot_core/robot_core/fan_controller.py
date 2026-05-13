@@ -72,7 +72,7 @@ class FanController(Node):
         freq = self.get_frequency()
         rpm = (freq * 60) / self.PULSES_PER_REV
         # convert to percentage of max speed (2000 RPM)
-        self.current_speed = int((rpm / self.MAX_RPM) * 100)  
+        self.current_speed = int((rpm / self.MAX_RPM) * 100)
 
     def get_frequency(self) -> int:
         count = 0
