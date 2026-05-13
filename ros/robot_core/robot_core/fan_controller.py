@@ -13,7 +13,7 @@ class FanController(Node):
     PWM_CHANNEL = 0
     TACH_PIN = 11
     PULSES_PER_REV = 2
-    MAX_RPM = 2000
+    MAX_RPM = 2000 #min 450
 
     def __init__(self) -> None:
         super().__init__('fan_controller')
@@ -62,13 +62,16 @@ class FanController(Node):
             return
 
         self.enable_pub.publish(Bool(data=True))
-        self.period_pub.publish(Int32(data=999))
-        self.duty_cycle_pub.publish(Int32(data=int(target_speed * 10000)))
+        self.period_pub.publish(Int32(data=100000))
+        self.duty_cycle_pub.publish(Int32(data=int((target_speed/100) * 100000))) # convert percentage to duty cycle (0-100000) for 100kHz period
         return
     
     def calculate_speed(self) -> None:
         freq = self.get_frequency()
         rpm = (freq * 60) / self.PULSES_PER_REV
+        if rpm <= 1:
+            self.set_fan_speed(0) # if fan is stopped, set target to 0 to prevent excess current draw
+            self.get_logger().warn('Fan is stalling, disabling fan')
         self.current_speed = int((rpm / self.MAX_RPM) * 100) # convert to percentage of max speed (2000 RPM)
 
     def get_frequency(self) -> int:
@@ -80,7 +83,7 @@ class FanController(Node):
                 count += 1
                 while self.tach.is_active:  # wait for the signal to go low
                     pass
-                
+
         hz = count / 3.0  # /3s for Hz
         return hz
     
@@ -93,5 +96,5 @@ class FanController(Node):
                 self.get_logger().warn('target is not close to current speed')
         else:
             self.get_logger().warn('fan speed is 0')
+        
         self.get_logger().info(f'target speed: {self.target_speed}% | current speed: {self.current_speed}%')
-        return
