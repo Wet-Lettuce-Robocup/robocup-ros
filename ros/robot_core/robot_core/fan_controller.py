@@ -45,8 +45,8 @@ class FanController(Node):
         self.target_speed = 0
         self.current_speed = 0
 
-        # timer to calculate speed every second
-        self.create_timer(1.0, self.calculate_speed)
+        # timer to calculate speed every 5 seconds 
+        self.create_timer(5, self.calculate_speed)         
 
     def target_rpm_callback(self, msg: Int32) -> None:
         target_speed = msg.data
