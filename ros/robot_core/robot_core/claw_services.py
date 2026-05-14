@@ -1,5 +1,5 @@
-
-class ClawServices:
+from rclpy.node import Node
+class ClawServices(Node):
     """
     Node to handle claw commands, including:
     - Open/close claw
@@ -13,9 +13,9 @@ class ClawServices:
     CLAW_CLOSED_ANGLE = 90
     GATE_OPEN_ANGLE = 0
     GATE_CLOSED_ANGLE = 90
-    
+
     def __init__(self):
-        pass
+        super().__init__('claw_services')
 
     def main(self):
         pass
