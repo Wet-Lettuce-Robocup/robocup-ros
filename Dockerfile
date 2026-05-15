@@ -46,6 +46,7 @@ COPY --from=libcamera-builder /usr/local /usr/local
 RUN ldconfig
 
 RUN apt-get update && apt-get install -y libboost-python-dev
+ENV OpenCV_DIR=/usr/local/lib/cmake/opencv4
 
 WORKDIR /underlay_ws
 RUN mkdir -p src \
@@ -53,7 +54,7 @@ RUN mkdir -p src \
   && git clone --depth 1 --branch rolling https://github.com/ros-perception/vision_opencv.git \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
   && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
-  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --event-handlers=console_direct+"
+  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
 
 # ==================== ROS2 ROBOT PACKAGES ====================
 FROM external-ros-builder AS robot-ros-builder
@@ -64,7 +65,7 @@ RUN mkdir -p src
 COPY ros/ ./src/
 
 # Install dependencies
-RUN apt-get update && apt-get install -y ros-$ROS_DISTRO-cv-bridge \
+RUN apt-get update \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
   && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
   && rm -rf /var/lib/apt/lists/*"
@@ -76,23 +77,22 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
 # ==================== RUNTIME STAGE ====================
 FROM base AS runtime
 
+# Python dependencies
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 vl53l5cx-ctypes
+COPY docker_entrypoint.sh /
+
+RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization \
+  python3-serial python3-smbus2 \
+  python3-lgpio python3-gpiozero \
+  python3-opencv python3-luma.oled python3-pil
+
 COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=external-ros-builder /underlay_ws/install /underlay_ws/install
 COPY --from=robot-ros-builder /overlay_ws/install /overlay_ws/install
 
 RUN ldconfig
-
-RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization \
-  ros-$ROS_DISTRO-cv-bridge \
-  python3-serial python3-smbus2 \
-  python3-lgpio python3-gpiozero \
-  python3-opencv python3-luma.oled python3-pil
-
-# Python dependencies
-ENV PIP_BREAK_SYSTEM_PACKAGES=1
-RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 vl53l5cx-ctypes
-COPY docker_entrypoint.sh /
 
 ENV ROS_WS=/overlay_ws
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc && \
