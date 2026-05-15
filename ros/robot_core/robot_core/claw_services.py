@@ -24,7 +24,7 @@ class ClawServices(Node):
             String, '/claw_command', self.claw_command_callback, 10
         )
 
-        # Publishers to servo controllers
+        # Publish to servo controllers
         self.grab_pub = self.create_publisher(
             Float32, '/servo/grab', 10
         )
