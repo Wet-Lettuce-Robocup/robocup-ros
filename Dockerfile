@@ -47,12 +47,13 @@ RUN ldconfig
 WORKDIR /underlay_ws
 RUN mkdir -p src \
   && git clone --depth 1 https://github.com/christianrauch/camera_ros.git src/camera_ros \
+  && git clone --depth 1 --branch rolling https://github.com/ros-perception/vision_opencv.git \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
-  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys=libcamera \
+  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev' \
   && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --event-handlers=console_direct+"
 
 # ==================== ROS2 ROBOT PACKAGES ====================
-FROM base AS robot-ros-builder
+FROM external-ros-builder AS robot-ros-builder
 
 COPY --from=opencv-builder /usr/local /usr/local
 
@@ -64,9 +65,10 @@ RUN mkdir -p src
 COPY ros/ ./src/
 
 # Install dependencies
-RUN apt-get update && \
-  rosdep install --from-paths src --ignore-src -r -y && \
-  rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ros-$ROS_DISTRO-cv-bridge \
+  && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
+  && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev' \
+  && rm -rf /var/lib/apt/lists/*"
 
 # Build overlay on top of underlay
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
@@ -83,6 +85,7 @@ COPY --from=robot-ros-builder /overlay_ws/install /overlay_ws/install
 RUN ldconfig
 
 RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization \
+  ros-$ROS_DISTRO-cv-bridge \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil
