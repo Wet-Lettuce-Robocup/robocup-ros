@@ -7,10 +7,9 @@ from std_msgs.msg import Float32, String
 
 class ClawServices(Node):
     """
-    Node to handle claw commands, including:
-    - Open/close claw
-    - Lift claw up/down
-    - Open/close gate
+    Node to handle claw commands.
+
+    Publish to /claw_command: e.g. claw_open, claw_close, lift_up, lift_down, gate_open, gate_close
     """
 
     LIFT_UP_ANGLE = 0.0
@@ -72,3 +71,4 @@ def main(args=None) -> None:
 
 if __name__ == '__main__':
     main()
+    
