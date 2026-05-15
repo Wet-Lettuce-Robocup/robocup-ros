@@ -1,6 +1,10 @@
 import math
+
+import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String, Float32
+from std_msgs.msg import Float32, String
+
+
 class ClawServices(Node):
     """
     Node to handle claw commands, including:
@@ -35,7 +39,7 @@ class ClawServices(Node):
             Float32, '/servo/tray_release', 10
         )
 
-    def claw_command_callback(self, msg: String):
+    def claw_command_callback(self, msg: String) -> None:
         if msg.data == 'lift_up':
             self.get_logger().info('Lifting claw up')
             self.lift_pub.publish(Float32(data=self.LIFT_UP_ANGLE))
@@ -56,3 +60,15 @@ class ClawServices(Node):
             self.gate_pub.publish(Float32(data=self.GATE_CLOSED_ANGLE))
         else:
             self.get_logger().warn(f'Unknown claw command: {msg.data}')
+
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    node = ClawServices()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
