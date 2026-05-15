@@ -41,23 +41,22 @@ RUN cmake .. \
 # ==================== ROS2 EXTERNAL PACKAGES ====================
 FROM base AS external-ros-builder
 
+COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=libcamera-builder /usr/local /usr/local
 RUN ldconfig
+
+RUN apt-get update && apt-get install -y libboost-python-dev
 
 WORKDIR /underlay_ws
 RUN mkdir -p src \
   && git clone --depth 1 https://github.com/christianrauch/camera_ros.git src/camera_ros \
   && git clone --depth 1 --branch rolling https://github.com/ros-perception/vision_opencv.git \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
-  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev' \
+  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
   && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --event-handlers=console_direct+"
 
 # ==================== ROS2 ROBOT PACKAGES ====================
 FROM external-ros-builder AS robot-ros-builder
-
-COPY --from=opencv-builder /usr/local /usr/local
-
-RUN ldconfig
 
 WORKDIR /overlay_ws
 RUN mkdir -p src
@@ -67,7 +66,7 @@ COPY ros/ ./src/
 # Install dependencies
 RUN apt-get update && apt-get install -y ros-$ROS_DISTRO-cv-bridge \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
-  && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev' \
+  && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
   && rm -rf /var/lib/apt/lists/*"
 
 # Build overlay on top of underlay
