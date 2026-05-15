@@ -53,8 +53,8 @@ RUN mkdir -p src \
   && git clone --depth 1 https://github.com/christianrauch/camera_ros.git src/camera_ros \
   && git clone --depth 1 --branch rolling https://github.com/ros-perception/vision_opencv.git \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
-  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
-  && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
+  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev cv_bridge' \
+  && colcon build --packages-select camera_ros cv_bridge --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
 
 # ==================== ROS2 ROBOT PACKAGES ====================
 FROM external-ros-builder AS robot-ros-builder
