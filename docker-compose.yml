@@ -7,6 +7,10 @@ services:
       - /dev:/dev
       - /sys/class/pwm:/sys/class/pwm
       - /run/udev/:/run/udev/
+      - ./ros:/overlay_ws/src:rw
+      - ./.colcon/build:/overlay_ws/build:rw
+      - ./.colcon/install:/overlay_ws/install:rw
+      - ./.colcon/log:/overlay_ws/log:rw
     group_add:
       - video
     environment:

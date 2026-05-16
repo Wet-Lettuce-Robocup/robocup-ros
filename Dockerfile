@@ -103,4 +103,5 @@ ENV ROS_DOMAIN_ID=1
 ENV ROS_LOCALHOST_ONLY=0
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
-CMD ["ros2", "launch", "robot_core", "state_manager.launch.py"]
+#CMD ["ros2", "launch", "robot_core", "state_manager.launch.py"]
+CMD ["/bin/bash"]
