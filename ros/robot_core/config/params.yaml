@@ -22,6 +22,21 @@ idle_button:
     publish_topic: "/idle_button"
     pull_up: True
 
+pwm0:
+  ros__parameters:
+    pwm_channel: 0
+    subscribe_topic: "/pwm0"
+
+pwm1:
+  ros__parameters:
+    pwm_channel: 1
+    subscribe_topic: "/pwm1"
+
+pwm2:
+  ros__parameters:
+    pwm_channel: 2
+    subscribe_topic: "/pwm2"
+
 /camera_front:
   camera_node:
     ros__parameters:

@@ -39,7 +39,7 @@ class I2CBusController(Node):
         self.right_tof_addr = 0x31
         self.front_tof_addr = 0x32
 
-        self.init_tof()
+        # self.init_tof()
 
         self.timer = self.create_timer(0.1, self.timer_callback)
 
@@ -128,7 +128,7 @@ class I2CBusController(Node):
         self.front_tof_pub.publish(msg)
 
     def timer_callback(self):
-        self.publish_tof()
+        # self.publish_tof()
 
         msg = Int32()
         ultrasonic_dist: int | None = self.read_ultrasonic()
