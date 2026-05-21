@@ -1,0 +1,82 @@
+name: Build and Deploy ROS Documentation
+
+on:
+  push:
+    branches: ["main", "master"] # or your default branch
+  pull_request: # Optional: build on PRs for preview (no deploy)
+    branches: ["main", "master"]
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ros-distro: [kilted, rolling] # Adjust as needed
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # If your packages use submodules
+
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ matrix.ros-distro }}
+
+      - name: Install rosdoc2 and dependencies
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+          sudo apt update
+          sudo apt install -y python3-pip python3-rosdep
+          rosdep update
+          # Install rosdoc2 (prefer latest from git or PyPI)
+          python3 -m pip install --upgrade pip
+          python3 -m pip install 'git+https://github.com/ros-infrastructure/rosdoc2@main' || python3 -m pip install rosdoc2
+
+      # - name: Install package dependencies (if needed)
+      #   shell: bash
+      #   run: |
+      #     source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+      #     rosdep install --from-paths . --ignore-src -y -r || echo "No rosdeps or already satisfied"
+
+      - name: Build documentation with rosdoc2
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+
+          # Create output directory
+          mkdir -p docs_output
+
+          # Build docs for your package(s). Adjust paths!
+          # For a single package at repo root:
+          rosdoc2 build --package-path ./ros/robot_core --output-directory docs_output
+
+          # For multiple packages in src/ (colcon-style workspace):
+          # for pkg in src/*/; do
+          #   if [ -f "${pkg}package.xml" ]; then
+          #     rosdoc2 build --package-path "$pkg" --output-directory docs_output
+          #   fi
+          # done
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only on main push
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "docs_output" # Adjust to where your index.html lives (e.g., docs_output/<package_name>)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
