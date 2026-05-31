@@ -29,6 +29,7 @@ class OLEDController(Node):
 
         self.font_large = self._load_font(36)
         self.font_small = self._load_font(12)
+        self.font_smallest = self._load_font(6)
 
         self.current_page = 0
         self.console_lines: list[str] = []
