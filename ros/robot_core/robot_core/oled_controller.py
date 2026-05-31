@@ -96,7 +96,7 @@ class OLEDController(Node):
         padded = [""] * max(0, 4 - len(lines)) + lines
         y_positions = [0, 16, 32, 48]
         for line, y in zip(padded, y_positions):
-            draw.text((0, y), line, font=self.font_small, fill='white')
+            draw.text((0, y), line, font=self.font_smallest, fill='white')
 
     def _truncate_line(self, text: str, max_len: int) -> str:
         return text if len(text) <= max_len else text[: max_len - 1] + '…'
