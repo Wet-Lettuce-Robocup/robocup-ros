@@ -1,3 +1,4 @@
+from collections import deque
 from pathlib import Path
 
 from luma.core.interface.serial import i2c
@@ -31,8 +32,8 @@ class OLEDController(Node):
         self.font_smallest = self._load_font(8)
 
         self.current_page = 0
-        self.console_lines: list[str] = []
         self.max_console_lines = 50
+        self.console_lines: deque = deque(maxlen=self.max_console_lines)
         self.pi_temp_path = Path('/sys/class/thermal/thermal_zone0/temp')
 
         try:
@@ -140,8 +141,6 @@ class OLEDController(Node):
         level = self._level_to_letter(msg.level)
         line = f'{level} {msg.msg}'
         self.console_lines.append(self._truncate_line(line, 45))
-        if len(self.console_lines) > self.max_console_lines:
-            self.console_lines = self.console_lines[-self.max_console_lines :]
         if self.current_page == 1:
             self.update_display()
 
