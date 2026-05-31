@@ -1,12 +1,12 @@
+import adafruit_vl53l1x
+import board
+import busio
 from gpiozero import OutputDevice
 import rclpy
 from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
 from std_msgs.msg import Float32, Int32
-import adafruit_vl53l1x
-import board
-import busio
 
 
 class I2CBusController(Node):
