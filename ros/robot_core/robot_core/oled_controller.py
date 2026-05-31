@@ -29,7 +29,7 @@ class OLEDController(Node):
 
         self.font_large = self._load_font(36)
         self.font_small = self._load_font(12)
-        self.font_smallest = self._load_font(6)
+        self.font_smallest = self._load_font(8)
 
         self.current_page = 0
         self.console_lines: list[str] = []
@@ -94,7 +94,7 @@ class OLEDController(Node):
     def _draw_console_page(self, draw):
         lines = self.console_lines[-4:]
         padded = [""] * max(0, 4 - len(lines)) + lines
-        y_positions = [0, 16, 32, 48]
+        y_positions = [0, 10, 20, 30, 40, 50]
         for line, y in zip(padded, y_positions):
             draw.text((0, y), line, font=self.font_smallest, fill='white')
 
@@ -113,7 +113,7 @@ class OLEDController(Node):
     def rosout_callback(self, msg: Log):
         level = self._level_to_letter(msg.level)
         line = f"{level} {msg.msg}"
-        self.console_lines.append(self._truncate_line(line, 21))
+        self.console_lines.append(self._truncate_line(line, 45))
         if len(self.console_lines) > self.max_console_lines:
             self.console_lines = self.console_lines[-self.max_console_lines :]
         if self.current_page == 1:
