@@ -93,7 +93,7 @@ class OLEDController(Node):
 
     def _draw_console_page(self, draw):
         lines = self.console_lines[-4:]
-        padded = [""] * max(0, 4 - len(lines)) + lines
+        padded = [""] * max(0, 6 - len(lines)) + lines
         y_positions = [0, 10, 20, 30, 40, 50]
         for line, y in zip(padded, y_positions):
             draw.text((0, y), line, font=self.font_smallest, fill='white')
