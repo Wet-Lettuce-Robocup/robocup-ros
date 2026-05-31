@@ -4,7 +4,7 @@ from gpiozero import OutputDevice
 from lifecycle_msgs.srv import ChangeState
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int32
 
 
 class State(Enum):
@@ -41,6 +41,7 @@ class StateMachineNode(Node):
         self.idle_button_sub = self.create_subscription(
             Bool, '/idle_button', self.idle_button_callback, 10
         )
+        self.fan_pub = self.create_publisher(Int32, '/fan/target_speed', 10)
 
         # Lifecycle service clients
         self.line_follower_client = self.create_client(
@@ -80,14 +81,23 @@ class StateMachineNode(Node):
 
         elif self.current_state == State.IDLE:
             if not self.idle_toggle:
+                fan_msg = Int32()
+                fan_msg.data = 100
+                self.fan_pub.publish(fan_msg)
+
                 self.change_node_state(
                     self.line_follower_client, Transition.TRANSITION_ACTIVATE
                 )
+
                 self.current_state = State.LINE_FOLLOWING
 
         elif self.idle_toggle:
+            fan_msg = Int32()
+            fan_msg.data = 0
+            self.fan_pub.publish(fan_msg)
+
             self.change_node_state(
-                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+                self.line_follower_client, Transition.TRANSITION_ACTIVATE
             )
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.current_state = State.IDLE
