@@ -37,15 +37,27 @@ pwm2:
     pwm_channel: 2
     subscribe_topic: "/pwm2"
 
-/camera_front:
+/front_camera:
   camera_node:
     ros__parameters:
-      camera_id: 1
+      camera: 1
+      role: "viewfinder"
+      format: "XRGB8888"
+      width: 1536
+      height: 864
+      sensor_mode: "1536:864"
+      orientation: 0
 
-/camera_down:
+/down_camera:
   camera_node:
     ros__parameters:
-      camera_id: 0
+      camera: 0
+      role: "viewfinder"
+      format: "XRGB8888"
+      width: 1536
+      height: 864
+      sensor_mode: "1536:864"
+      orientation: 0
 
 bno08x_driver:
   ros__parameters:

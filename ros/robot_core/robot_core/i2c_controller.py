@@ -4,7 +4,9 @@ from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
 from std_msgs.msg import Int32
-from vl53l5cx_ctypes import VL53L5CX
+import adafruit_vl53l1x
+import board
+import busio
 
 
 class I2CBusController(Node):
@@ -44,19 +46,20 @@ class I2CBusController(Node):
         self.timer = self.create_timer(0.1, self.timer_callback)
 
     def init_tof(self):
-        self.claw_tof_en.on()
-        self.claw_tof = VL53L5CX()
-        self.claw_tof.set_i2c_address(self.claw_tof_addr)
-        self.claw_tof.start_ranging()
+        self.adafruit_i2c = busio.I2C(board.SCL, board.SDA)
+        # self.claw_tof_en.on()
+        # self.claw_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+        # self.claw_tof.set_address(self.claw_tof_addr)
+        # self.claw_tof.start_ranging()
 
-        self.right_tof_en.on()
-        self.right_tof = VL53L5CX()
-        self.right_tof.set_i2c_address(self.right_tof_addr)
-        self.right_tof.start_ranging()
+        # self.right_tof_en.on()
+        # self.right_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+        # self.right_tof.set_address(self.right_tof_addr)
+        # self.right_tof.start_ranging()
 
         self.front_tof_en.on()
-        self.front_tof = VL53L5CX()
-        self.front_tof.set_i2c_address(self.front_tof_addr)
+        self.front_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+        self.front_tof.set_address(self.front_tof_addr)
         self.front_tof.start_ranging()
 
     def handle_read(
@@ -113,18 +116,22 @@ class I2CBusController(Node):
             self.get_logger().error(f'I2C read failed! {e}')
 
     def publish_tof(self):
-        claw_dist: int = self.claw_tof.get_data().distance_mm
-        right_dist: int = self.claw_tof.get_data().distance_mm
-        front_dist: int = self.front_tof.get_data().distance_mm
+        # claw_dist: int = self.claw_tof.range
+        # right_dist: int = self.claw_tof.range
+        front_dist: float | None = self.front_tof.distance
 
         msg = Int32()
-        msg.data = claw_dist
-        self.claw_tof_pub.publish(msg)
+        # msg.data = claw_dist
+        # self.claw_tof_pub.publish(msg)
 
-        msg.data = right_dist
-        self.right_tof_pub.publish(msg)
+        # msg.data = right_dist
+        # self.right_tof_pub.publish(msg)
 
-        msg.data = front_dist
+        if front_dist is None:
+            msg.data = -1
+        else:
+            msg.data = int(front_dist * 10)
+
         self.front_tof_pub.publish(msg)
 
     def timer_callback(self):
