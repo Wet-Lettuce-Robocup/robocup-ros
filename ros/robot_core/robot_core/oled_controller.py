@@ -4,10 +4,9 @@ from luma.oled.device import ssd1306
 from PIL import ImageFont
 import rclpy
 from rclpy.node import Node
+from rcl_interfaces.msg import Log
 from std_msgs.msg import Int32
 from std_msgs.msg import String
-import os
-from pathlib import Path
 
 
 class OLEDController(Node):
@@ -29,7 +28,7 @@ class OLEDController(Node):
 
         self.current_page = 0
         self.console_lines: list[str] = []
-        self.log_path = self._resolve_rosout_log_path()
+        self.max_console_lines = 50
 
         try:
             self.serial = i2c(port=1, address=0x3C)
@@ -54,11 +53,13 @@ class OLEDController(Node):
         self.black_sub = self.create_subscription(
             Int32, 'oled_black', self.black_callback, 10
         )
+        self.rosout_sub = self.create_subscription(
+            Log, '/rosout', self.rosout_callback, 50
+        )
 
         self.declare_parameter('page_change', 5.0)
         page_change = float(self.get_parameter('page_change').value)
         self.page_timer = self.create_timer(page_change, self.page_timer_callback)
-        self.log_timer = self.create_timer(1.0, self.log_timer_callback)
 
         self.update_display()
 
@@ -85,53 +86,33 @@ class OLEDController(Node):
         for line, y in zip(padded, y_positions):
             draw.text((0, y), line, font=self.font_small, fill='white')
 
-    def _resolve_rosout_log_path(self) -> Path | None:
-        base_dir = os.environ.get('ROS_LOG_DIR')
-        if base_dir:
-            base = Path(base_dir)
-        else:
-            base = Path.home() / '.ros' / 'log'
-
-        latest_dir = base / 'latest'
-        rosout = latest_dir / 'rosout.log'
-        if rosout.exists():
-            return rosout
-
-        if not base.exists():
-            return None
-
-        candidates = sorted(base.glob('*/rosout.log'), key=lambda p: p.stat().st_mtime)
-        return candidates[-1] if candidates else None
-
-    def _read_tail_lines(self, path: Path, line_count: int) -> list[str]:
-        try:
-            with path.open('r', encoding='utf-8', errors='replace') as handle:
-                lines = handle.readlines()
-        except OSError:
-            return []
-
-        tail = [line.rstrip("\n") for line in lines[-line_count:]]
-        return [self._truncate_line(line, 21) for line in tail]
-
     def _truncate_line(self, text: str, max_len: int) -> str:
         return text if len(text) <= max_len else text[: max_len - 1] + '…'
-
-    def _update_console_lines(self):
-        if self.log_path is None:
-            self.console_lines = ["rosout.log not found"]
-            return
-
-        self.console_lines = self._read_tail_lines(self.log_path, 4)
 
     def page_timer_callback(self):
         self.current_page = 1 - self.current_page
         self.update_display()
 
-    def log_timer_callback(self):
-        if self.current_page != 1:
-            return
-        self._update_console_lines()
-        self.update_display()
+    def rosout_callback(self, msg: Log):
+        level = self._level_to_letter(msg.level)
+        name = msg.name.split('/')[-1]
+        line = f"{level} {name}: {msg.msg}"
+        self.console_lines.append(self._truncate_line(line, 21))
+        if len(self.console_lines) > self.max_console_lines:
+            self.console_lines = self.console_lines[-self.max_console_lines :]
+        if self.current_page == 1:
+            self.update_display()
+
+    def _level_to_letter(self, level: int) -> str:
+        if level >= Log.FATAL:
+            return 'F'
+        if level >= Log.ERROR:
+            return 'E'
+        if level >= Log.WARN:
+            return 'W'
+        if level >= Log.INFO:
+            return 'I'
+        return 'D'
 
     def status_callback(self, msg: String):
         self.status_value = msg.data.strip() or "-"
