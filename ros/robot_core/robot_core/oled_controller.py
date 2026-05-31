@@ -32,8 +32,8 @@ class OLEDController(Node):
         self.font_smallest = self._load_font(8)
 
         self.current_page = 0
-        self.max_console_lines = 50
-        self.console_lines: deque = deque(maxlen=self.max_console_lines)
+        self.max_console_lines = 6
+        self.console_lines: deque[str] = deque(maxlen=self.max_console_lines)
         self.pi_temp_path = Path('/sys/class/thermal/thermal_zone0/temp')
 
         try:
@@ -119,8 +119,8 @@ class OLEDController(Node):
                 self._draw_console_page(draw)
 
     def _draw_console_page(self, draw):
-        lines = self.console_lines[-6:]
-        padded = [''] * max(0, 6 - len(lines)) + lines
+        lines = self.console_lines
+        padded = deque(['']) * max(0, 6 - len(lines)) + lines
         y_positions = [0, 10, 20, 30, 40, 50]
         for line, y in zip(padded, y_positions):
             draw.text((0, y), line, font=self.font_smallest, fill='white')
