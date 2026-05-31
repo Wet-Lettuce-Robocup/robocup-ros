@@ -32,7 +32,7 @@ class OLEDController(Node):
 
         try:
             self.serial = i2c(port=1, address=0x3C)
-            self.device = ssd1306(self.serial, width=128, height=64)
+            self.device = ssd1306(self.serial, width=128, height=64, rotate=2)
             self.get_logger().info('OLED display initialized!')
 
         except OSError as e:
