@@ -72,6 +72,10 @@ class StateMachineNode(Node):
         if not msg.data:
             self.idle_toggle = not self.idle_toggle
 
+    def clean_exit(self):
+        self.en_3v3.off()
+        self.en_5v.off()
+
     def state_loop(self):
         from lifecycle_msgs.msg import Transition
 
@@ -85,9 +89,9 @@ class StateMachineNode(Node):
                 fan_msg.data = 100
                 self.fan_pub.publish(fan_msg)
 
-                self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
-                )
+                # self.change_node_state(
+                #     self.line_follower_client, Transition.TRANSITION_ACTIVATE
+                # )
 
                 self.current_state = State.LINE_FOLLOWING
 
@@ -96,10 +100,10 @@ class StateMachineNode(Node):
             fan_msg.data = 0
             self.fan_pub.publish(fan_msg)
 
-            self.change_node_state(
-                self.line_follower_client, Transition.TRANSITION_ACTIVATE
-            )
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            # self.change_node_state(
+            #     self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+            # )
+            # self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
@@ -133,6 +137,7 @@ def main(args=None):
     rclpy.init(args=args)
     node = StateMachineNode()
     rclpy.spin(node)
+    node.clean_exit()
     node.destroy_node()
     rclpy.shutdown()
 

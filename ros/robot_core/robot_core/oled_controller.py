@@ -20,7 +20,7 @@ class OLEDController(Node):
         self.device: ssd1306 | None = None
         self.serial: i2c | None = None
 
-        self.status_value = "-"
+        self.status_value = '-'
         self.error_value = 0
         self.silver_value = 0
         self.black_value = 0
@@ -51,7 +51,7 @@ class OLEDController(Node):
             String, 'oled_status', self.status_callback, 10
         )
         self.error_sub = self.create_subscription(
-            Int32, 'oled_error', self.error_callback, 10
+            Float32, 'line_error', self.error_callback, 10
         )
         self.silver_sub = self.create_subscription(
             Int32, 'oled_silver', self.silver_callback, 10
@@ -60,7 +60,7 @@ class OLEDController(Node):
             Int32, 'oled_black', self.black_callback, 10
         )
         self.stm_temp_sub = self.create_subscription(
-            Float32, 'oled_stm_temp', self.stm_temp_callback, 10
+            Float32, 'stm_temp', self.stm_temp_callback, 10
         )
         self.rosout_sub = self.create_subscription(
             Log, '/rosout', self.rosout_callback, 50
@@ -75,25 +75,52 @@ class OLEDController(Node):
 
     def _load_font(self, size: int) -> ImageFont.ImageFont:
         try:
-            return ImageFont.truetype("DejaVuSans.ttf", size)
+            return ImageFont.truetype('DejaVuSans.ttf', size)
         except OSError:
             return ImageFont.load_default()
 
     def update_display(self):
         with canvas(self.device) as draw:
             if self.current_page == 0:
-                draw.text((2, 6), self.status_value[:1], font=self.font_large, fill='white')
-                draw.text((64, 2), f"Error: {self.error_value}", font=self.font_small, fill='white')
-                draw.text((64, 22), f"Silver: {self.silver_value}", font=self.font_small, fill='white')
-                draw.text((64, 42), f"Black: {self.black_value}", font=self.font_small, fill='white')
-                draw.text((2, 40), self._format_temp('Pi', self.pi_temp_c), font=self.font_small, fill='white')
-                draw.text((2, 52), self._format_temp('STM', self.stm_temp_c), font=self.font_small, fill='white')
+                draw.text(
+                    (2, 6), self.status_value[:1], font=self.font_large, fill='white'
+                )
+                draw.text(
+                    (64, 2),
+                    f'Error: {self.error_value}',
+                    font=self.font_small,
+                    fill='white',
+                )
+                draw.text(
+                    (64, 22),
+                    f'Silver: {self.silver_value}',
+                    font=self.font_small,
+                    fill='white',
+                )
+                draw.text(
+                    (64, 42),
+                    f'Black: {self.black_value}',
+                    font=self.font_small,
+                    fill='white',
+                )
+                draw.text(
+                    (2, 40),
+                    self._format_temp('Pi', self.pi_temp_c),
+                    font=self.font_small,
+                    fill='white',
+                )
+                draw.text(
+                    (2, 52),
+                    self._format_temp('STM', self.stm_temp_c),
+                    font=self.font_small,
+                    fill='white',
+                )
             else:
                 self._draw_console_page(draw)
 
     def _draw_console_page(self, draw):
         lines = self.console_lines[-6:]
-        padded = [""] * max(0, 6 - len(lines)) + lines
+        padded = [''] * max(0, 6 - len(lines)) + lines
         y_positions = [0, 10, 20, 30, 40, 50]
         for line, y in zip(padded, y_positions):
             draw.text((0, y), line, font=self.font_smallest, fill='white')
@@ -112,7 +139,7 @@ class OLEDController(Node):
 
     def rosout_callback(self, msg: Log):
         level = self._level_to_letter(msg.level)
-        line = f"{level} {msg.msg}"
+        line = f'{level} {msg.msg}'
         self.console_lines.append(self._truncate_line(line, 45))
         if len(self.console_lines) > self.max_console_lines:
             self.console_lines = self.console_lines[-self.max_console_lines :]
@@ -139,16 +166,16 @@ class OLEDController(Node):
 
     def _format_temp(self, label: str, value: float | None) -> str:
         if value is None:
-            return f"{label}: --.-C"
-        return f"{label}: {value:.1f}C"
+            return f'{label}: --.-C'
+        return f'{label}: {value:.1f}C'
 
     def status_callback(self, msg: String):
-        self.status_value = msg.data.strip() or "-"
+        self.status_value = msg.data.strip() or '-'
         if self.current_page == 0:
             self.update_display()
 
-    def error_callback(self, msg: Int32):
-        self.error_value = msg.data
+    def error_callback(self, msg: Float32):
+        self.error_value = int(msg.data)
         if self.current_page == 0:
             self.update_display()
 

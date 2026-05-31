@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
-from std_msgs.msg import Int32
+from std_msgs.msg import Float32, Int32
 import adafruit_vl53l1x
 import board
 import busio
@@ -12,8 +12,9 @@ import busio
 class I2CBusController(Node):
     """Class for controlling I2C bus to prevent collisions."""
 
-    ULTRASONIC_ADDR = 0x67
+    STM_ADDR = 0x67
     ULTRASONIC_CMD = 0x83
+    TEMP_CMD = 0x84
 
     def __init__(self):
         super().__init__('i2c_controller')
@@ -32,6 +33,7 @@ class I2CBusController(Node):
         self.right_tof_pub = self.create_publisher(Int32, 'tof/right', 10)
         self.front_tof_pub = self.create_publisher(Int32, 'tof/front', 10)
         self.ultrasonic_pub = self.create_publisher(Int32, 'ultrasonic', 10)
+        self.stm_temp_pub = self.create_publisher(Float32, 'stm_temp', 10)
 
         self.claw_tof_en = OutputDevice(20, active_high=True, initial_value=False)
         self.right_tof_en = OutputDevice(19, active_high=True, initial_value=False)
@@ -104,11 +106,20 @@ class I2CBusController(Node):
 
     def read_ultrasonic(self) -> int | None:
         try:
-            msg = self.bus.read_i2c_block_data(
-                self.ULTRASONIC_ADDR, self.ULTRASONIC_CMD, 4
-            )
+            msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.ULTRASONIC_CMD, 4)
 
             dist: int = int.from_bytes(msg)
+
+            return dist
+
+        except IOError as e:
+            self.get_logger().error(f'I2C read failed! {e}')
+
+    def read_temp(self) -> float | None:
+        try:
+            msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.TEMP_CMD, 4)
+
+            dist: float = int.from_bytes(msg) / 100
 
             return dist
 
@@ -145,6 +156,15 @@ class I2CBusController(Node):
 
         msg.data = ultrasonic_dist
         self.ultrasonic_pub.publish(msg)
+
+        temp_msg = Float32()
+        temp: float | None = self.read_temp()
+
+        if temp is None:
+            return
+
+        temp_msg.data = temp
+        self.stm_temp_pub.publish(temp_msg)
 
 
 def main(args=None):

@@ -13,6 +13,13 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
+                package='robot_core',
+                executable='oled_controller',
+                name='oled_controller',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='imu_static_tf',
@@ -110,13 +117,6 @@ def generate_launch_description():
                 package='robot_core',
                 executable='status_led',
                 name='status_led',
-                output='screen',
-                parameters=[config],
-            ),
-            Node(
-                package='robot_core',
-                executable='oled_controller',
-                name='oled_controller',
                 output='screen',
                 parameters=[config],
             ),
