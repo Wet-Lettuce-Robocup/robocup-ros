@@ -57,7 +57,7 @@ class OLEDController(Node):
             Log, '/rosout', self.rosout_callback, 50
         )
 
-        self.declare_parameter('page_change', 5.0)
+        self.declare_parameter('page_change', 3.0)
         page_change = float(self.get_parameter('page_change').value)
         self.page_timer = self.create_timer(page_change, self.page_timer_callback)
 
@@ -95,8 +95,7 @@ class OLEDController(Node):
 
     def rosout_callback(self, msg: Log):
         level = self._level_to_letter(msg.level)
-        name = msg.name.split('/')[-1]
-        line = f"{level} {name}: {msg.msg}"
+        line = f"{level} {msg.msg}"
         self.console_lines.append(self._truncate_line(line, 21))
         if len(self.console_lines) > self.max_console_lines:
             self.console_lines = self.console_lines[-self.max_console_lines :]
