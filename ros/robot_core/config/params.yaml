@@ -40,23 +40,23 @@ pwm2:
 /front_camera:
   camera_node:
     ros__parameters:
-      camera: 1
-      role: "viewfinder"
-      format: "XRGB8888"
-      width: 1536
-      height: 864
-      sensor_mode: "1536:864"
-      orientation: 0
-
-/down_camera:
-  camera_node:
-    ros__parameters:
       camera: 0
       role: "viewfinder"
       format: "XRGB8888"
       width: 1536
       height: 864
-      sensor_mode: "1536:864"
+      sensor_mode: "2304:1296"
+      orientation: 180
+
+/down_camera:
+  camera_node:
+    ros__parameters:
+      camera: 1
+      role: "viewfinder"
+      format: "XRGB8888"
+      width: 1536
+      height: 864
+      sensor_mode: "2304:1296"
       orientation: 0
 
 bno08x_driver:
