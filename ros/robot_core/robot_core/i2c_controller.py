@@ -1,4 +1,3 @@
-from time import sleep
 import adafruit_vl53l1x
 import board
 import busio
