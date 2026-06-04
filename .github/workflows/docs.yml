@@ -2,7 +2,7 @@ name: Build and Deploy ROS Documentation
 
 on:
   push:
-    branches: ["main", "master", "documentation"] # or your default branch
+    branches: ["main", "master"] # or your default branch
   pull_request: # Optional: build on PRs for preview (no deploy)
     branches: ["main", "master"]
   workflow_dispatch: # Manual trigger except it doesn't work
@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive # If your packages use submodules
 
@@ -75,15 +75,15 @@ jobs:
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
-        if: github.event_name == 'push' && github.ref == 'refs/heads/documentation' # Only on main push
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' # Only on main push
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: "docs_output" # Adjust to where your index.html lives (e.g., docs_output/<package_name>)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/documentation'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        if: github.event_name == 'push' && github.ref == 'refs/heads/documentation'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
