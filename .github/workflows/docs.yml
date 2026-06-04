@@ -2,7 +2,7 @@ name: Build and Deploy ROS Documentation
 
 on:
   push:
-    branches: ["main", "master"] # or your default branch
+    branches: ["main", "master", "documentation"] # or your default branch
   pull_request: # Optional: build on PRs for preview (no deploy)
     branches: ["main", "master"]
   workflow_dispatch: # Manual trigger
