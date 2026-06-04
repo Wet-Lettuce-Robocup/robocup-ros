@@ -61,7 +61,14 @@ jobs:
 
           # For multiple packages in src/ (colcon-style workspace):
           for pkg in ./ros/*/; do
-            if [ -f "${pkg}package.xml" ]; then
+            pkg_name=$(basename "$pkg")
+
+            # 2. Skip the specific package you want to exclude
+            if [ "$pkg_name" = "bno08x_ros2_driver" ]; then
+              continue
+            fi
+
+            if [ -f "${pkg}package.xml"] && ; then
               rosdoc2 build --package-path "$pkg" --output-directory docs_output
             fi
           done
