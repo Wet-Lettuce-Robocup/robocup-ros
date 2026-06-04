@@ -35,7 +35,7 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.ros-distro }}/setup.bash
           sudo apt update
-          sudo apt install -y python3-pip python3-rosdep
+          sudo apt install -y python3-pip python3-rosdep doxygen graphviz
           rosdep update
           # Install rosdoc2 (prefer latest from git or PyPI)
           python3 -m pip install --upgrade pip
