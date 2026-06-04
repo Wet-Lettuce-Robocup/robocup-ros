@@ -2,9 +2,9 @@ name: Build and Deploy ROS Documentation
 
 on:
   push:
-    branches: ["main", "master"] # or your default branch
+    branches: ['master']
   pull_request: # Optional: build on PRs for preview (no deploy)
-    branches: ["main", "master"]
+    branches: ['master']
   workflow_dispatch: # Manual trigger except it doesn't work
 
 permissions:
@@ -17,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ros-distro: [kilted] # Adjust as needed
+        ros-distro: [kilted]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          submodules: recursive # If your packages use submodules
+          submodules: recursive # To include submodules
 
       - name: Setup ROS 2
         uses: ros-tooling/setup-ros@v0.7
@@ -80,7 +80,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "docs_output" # Adjust to where your index.html lives (e.g., docs_output/<package_name>)
+          path: "docs_output" # Adjust to where index.html lives (e.g., docs_output/<package_name>)
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
       - name: Deploy to GitHub Pages
