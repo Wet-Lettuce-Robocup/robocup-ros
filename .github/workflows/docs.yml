@@ -5,7 +5,7 @@ on:
     branches: ["main", "master", "documentation"] # or your default branch
   pull_request: # Optional: build on PRs for preview (no deploy)
     branches: ["main", "master"]
-  workflow_dispatch: # Manual trigger
+  workflow_dispatch: # Manual trigger except it doesn't work
 
 permissions:
   contents: read
