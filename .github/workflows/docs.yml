@@ -68,7 +68,7 @@ jobs:
               continue
             fi
 
-            if [ -f "${pkg}package.xml"]; then
+            if [ -f "${pkg}package.xml" ]; then
               rosdoc2 build --package-path "$pkg" --output-directory docs_output
             fi
           done
