@@ -68,15 +68,15 @@ jobs:
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only on main push
+        if: github.event_name == 'push' && github.ref == 'refs/heads/documentation' # Only on main push
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: "docs_output" # Adjust to where your index.html lives (e.g., docs_output/<package_name>)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/documentation'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/documentation'
