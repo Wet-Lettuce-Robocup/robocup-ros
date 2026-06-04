@@ -57,14 +57,14 @@ jobs:
 
           # Build docs for your package(s). Adjust paths!
           # For a single package at repo root:
-          rosdoc2 build --package-path ./ros/robot_core --output-directory docs_output
+          # rosdoc2 build --package-path ./ros/robot_core --output-directory docs_output
 
           # For multiple packages in src/ (colcon-style workspace):
-          # for pkg in src/*/; do
-          #   if [ -f "${pkg}package.xml" ]; then
-          #     rosdoc2 build --package-path "$pkg" --output-directory docs_output
-          #   fi
-          # done
+          for pkg in ./ros/*/; do
+            if [ -f "${pkg}package.xml" ]; then
+              rosdoc2 build --package-path "$pkg" --output-directory docs_output
+            fi
+          done
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
