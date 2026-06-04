@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ros-distro: [kilted, rolling] # Adjust as needed
+        ros-distro: [kilted] # Adjust as needed
 
     steps:
       - name: Checkout repository
