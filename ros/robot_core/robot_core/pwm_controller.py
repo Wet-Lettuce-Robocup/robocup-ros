@@ -36,6 +36,8 @@ class PWMController(Node):
             with open(os.path.join(self.chip_path, 'export'), 'w') as f:
                 f.write(str(self.pwm_channel))
 
+        self.enable_on_set_period: bool = False
+
         self.enable_sub = self.create_subscription(
             Bool, f'{self.subscribe_topic}/enable', self.enable_callback, 10
         )
@@ -49,6 +51,10 @@ class PWMController(Node):
         self.period = 0
 
     def enable_callback(self, msg: Bool) -> None:
+        if self.period == 0:
+            self.enable_on_set_period = True
+            return
+
         with open(os.path.join(self.channel_path, 'enable'), 'w') as f:
             f.write(str(int(msg.data)))
 
@@ -56,6 +62,13 @@ class PWMController(Node):
         with open(os.path.join(self.channel_path, 'period'), 'w') as f:
             f.write(str(msg.data))
             self.period = msg.data
+
+        if not self.enable_on_set_period:
+            return
+
+        with open(os.path.join(self.channel_path, 'enable'), 'w') as f:
+            f.write('1')
+            self.enable_on_set_period = False
 
     def duty_cycle_callback(self, msg: Int32) -> None:
         duty_cycle = msg.data

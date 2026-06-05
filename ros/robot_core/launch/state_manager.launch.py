@@ -13,6 +13,13 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
+                package='robot_core',
+                executable='oled_controller',
+                name='oled_controller',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='imu_static_tf',
@@ -87,6 +94,27 @@ def generate_launch_description():
             ),
             Node(
                 package='robot_core',
+                executable='pwm_controller',
+                name='pwm0',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='robot_core',
+                executable='pwm_controller',
+                name='pwm1',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='robot_core',
+                executable='pwm_controller',
+                name='pwm2',
+                output='screen',
+                parameters=[config],
+            ),
+            Node(
+                package='robot_core',
                 executable='status_led',
                 name='status_led',
                 output='screen',
@@ -94,15 +122,15 @@ def generate_launch_description():
             ),
             Node(
                 package='robot_core',
-                executable='oled_controller',
-                name='oled_controller',
+                executable='button_publisher',
+                name='idle_button',
                 output='screen',
                 parameters=[config],
             ),
             Node(
                 package='robot_core',
-                executable='button_publisher',
-                name='idle_button',
+                executable='fan_controller',
+                name='fan_controller',
                 output='screen',
                 parameters=[config],
             ),

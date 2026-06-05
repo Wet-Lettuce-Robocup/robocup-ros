@@ -22,15 +22,42 @@ idle_button:
     publish_topic: "/idle_button"
     pull_up: True
 
-/camera_front:
-  camera_node:
-    ros__parameters:
-      camera_id: 1
+pwm0:
+  ros__parameters:
+    pwm_channel: 0
+    subscribe_topic: "/pwm0"
 
-/camera_down:
+pwm1:
+  ros__parameters:
+    pwm_channel: 1
+    subscribe_topic: "/pwm1"
+
+pwm2:
+  ros__parameters:
+    pwm_channel: 2
+    subscribe_topic: "/pwm2"
+
+/front_camera:
   camera_node:
     ros__parameters:
-      camera_id: 0
+      camera: 0
+      role: "viewfinder"
+      format: "XRGB8888"
+      width: 1536
+      height: 864
+      sensor_mode: "2304:1296"
+      orientation: 180
+
+/down_camera:
+  camera_node:
+    ros__parameters:
+      camera: 1
+      role: "viewfinder"
+      format: "XRGB8888"
+      width: 1536
+      height: 864
+      sensor_mode: "2304:1296"
+      orientation: 0
 
 bno08x_driver:
   ros__parameters:
