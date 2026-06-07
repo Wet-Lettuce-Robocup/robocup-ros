@@ -30,21 +30,11 @@ class ServoController(Node):
         self.declare_parameter('servo_cmd', 0x10)
         self.declare_parameter('gpio_pin', 1)
 
-        self.listen_topic: str = (
-            self.get_parameter('listen_topic').get_parameter_value().string_value
-        )
-        self.servo_id: int = (
-            self.get_parameter('servo_id').get_parameter_value().integer_value & 0xFF
-        )
-        self.i2c_address: int = (
-            self.get_parameter('i2c_address').get_parameter_value().integer_value & 0xFF
-        )
-        self.servo_cmd: int = (
-            self.get_parameter('servo_cmd').get_parameter_value().integer_value & 0xFF
-        )
-        self.gpio_pin: int = (
-            self.get_parameter('gpio_pin').get_parameter_value().integer_value
-        )
+        self.listen_topic: str = self.get_parameter('listen_topic').value
+        self.servo_id: int = self.get_parameter('servo_id').value & 0xFF
+        self.i2c_address: int = self.get_parameter('i2c_address').value & 0xFF
+        self.servo_cmd: int = self.get_parameter('servo_cmd').value & 0xFF
+        self.gpio_pin: int = self.get_parameter('gpio_pin').value
 
         self.create_subscription(Float32, self.listen_topic, self.servo_callback, 10)
         self.cli = self.create_client(I2CWrite, 'i2c_write')

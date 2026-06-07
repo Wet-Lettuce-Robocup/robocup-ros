@@ -14,17 +14,11 @@ class ButtonPublisher(Node):
         self.declare_parameter('publish_topic', '/button')
         self.declare_parameter('pull_up', True)
 
-        self.gpio_pin: int = (
-            self.get_parameter('gpio_pin').get_parameter_value().integer_value
-        )
+        self.gpio_pin: int = self.get_parameter('gpio_pin').value
 
-        self.publish_topic: str = (
-            self.get_parameter('publish_topic').get_parameter_value().string_value
-        )
+        self.publish_topic: str = self.get_parameter('publish_topic').value
 
-        self.pull_up: bool = (
-            self.get_parameter('pull_up').get_parameter_value().bool_value
-        )
+        self.pull_up: bool = self.get_parameter('pull_up').value
 
         self.pub = self.create_publisher(Bool, self.publish_topic, 10)
 

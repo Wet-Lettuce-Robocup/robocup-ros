@@ -16,15 +16,9 @@ class StatusLED(Node):
         self.declare_parameter('spi_device', 0)
         self.declare_parameter('led_count', 3)
 
-        self.spi_bus: int = (
-            self.get_parameter('spi_bus').get_parameter_value().integer_value
-        )
-        self.spi_device: int = (
-            self.get_parameter('spi_device').get_parameter_value().integer_value
-        )
-        self.led_count: int = (
-            self.get_parameter('led_count').get_parameter_value().integer_value
-        )
+        self.spi_bus: int = self.get_parameter('spi_bus').value
+        self.spi_device: int = self.get_parameter('spi_device').value
+        self.led_count: int = self.get_parameter('led_count').value
 
         self.command_sub = self.create_subscription(
             LEDCommand, 'led_command', self.command_callback, 10

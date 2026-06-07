@@ -15,15 +15,9 @@ class PWMController(Node):
         self.declare_parameter('pwm_channel', 0)
         self.declare_parameter('subscribe_topic', 'pwm0')
 
-        self.pwm_chip: int = (
-            self.get_parameter('pwm_chip').get_parameter_value().integer_value
-        )
-        self.pwm_channel: int = (
-            self.get_parameter('pwm_channel').get_parameter_value().integer_value
-        )
-        self.subscribe_topic: str = (
-            self.get_parameter('subscribe_topic').get_parameter_value().string_value
-        )
+        self.pwm_chip: int = self.get_parameter('pwm_chip').value
+        self.pwm_channel: int = self.get_parameter('pwm_channel').value
+        self.subscribe_topic: str = self.get_parameter('subscribe_topic').value
 
         self.chip_path = os.path.join('/sys/class/pwm', f'pwmchip{self.pwm_chip}')
         self.channel_path = os.path.join(self.chip_path, f'pwm{self.pwm_channel}')
