@@ -19,7 +19,8 @@ class StateMachineNode(Node):
     """
     Switches between line follow, rescue and idle states.
 
-    Configure names for line follow and rescue nodes in config file. Defaults are line_follower and rescue.
+    Configure names for line follow and rescue nodes in config file.
+    Defaults are line_follower and rescue.
 
     Topics for changing states:
         Rescue: /rescue_active (Bool)
