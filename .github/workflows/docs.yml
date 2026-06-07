@@ -41,6 +41,12 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install 'git+https://github.com/ros-infrastructure/rosdoc2@main' || python3 -m pip install rosdoc2
 
+      - name: Install package dependencies
+        shell: bash
+        run: |
+          sudo apt install -y python3-serial python3-smbus2 python3-lgpio python3-gpiozero  python3-luma.oled python3-pil
+          python3 -m pip install rpi5-ws2812
+
       # - name: Install package dependencies (if needed)
       #   shell: bash
       #   run: |
@@ -80,7 +86,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "docs_output" # Adjust to where index.html lives (e.g., docs_output/<package_name>)
+          path: 'docs_output' # Adjust to where index.html lives (e.g., docs_output/<package_name>)
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
       - name: Deploy to GitHub Pages

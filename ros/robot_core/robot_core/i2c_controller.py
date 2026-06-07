@@ -1,6 +1,15 @@
-import adafruit_vl53l1x
-import board
-import busio
+try:
+    import adafruit_vl53l1x
+    import board
+    import busio
+
+except ImportError:
+    from unittest.mock import MagicMock
+
+    adafruit_vl53l1x = MagicMock()
+    board = MagicMock()
+    busio = MagicMock()
+
 from gpiozero import OutputDevice
 import rclpy
 from rclpy.node import Node

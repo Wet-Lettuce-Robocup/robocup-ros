@@ -19,9 +19,8 @@ class StateMachineNode(Node):
     """
     Switches between line follow, rescue and idle states.
 
-    Required names for line follow and rescue nodes to be managed by this node:
-        Line follow node: line_follower
-        Rescue node: rescue_node
+    Configure names for line follow and rescue nodes in config file.
+    Defaults are line_follower and rescue.
 
     Topics for changing states:
         Rescue: /rescue_active (Bool)
@@ -35,6 +34,12 @@ class StateMachineNode(Node):
         self.rescue_active = False
         self.idle_toggle = True
 
+        self.declare_parameter('line_follow_node', 'line_follower')
+        self.declare_parameter('rescue_node', 'rescue')
+
+        self.line_follow_node: str = self.get_parameter('line_follow_node').value
+        self.rescue_node: str = self.get_parameter('rescue_node').value
+
         self.rescue_active_sub = self.create_subscription(
             Bool, '/rescue_active', self.rescue_active_callback, 10
         )
@@ -45,13 +50,10 @@ class StateMachineNode(Node):
 
         # Lifecycle service clients
         self.line_follower_client = self.create_client(
-            ChangeState, '/line_follower/change_state'
+            ChangeState, f'/{self.line_follow_node}/change_state'
         )
         self.rescue_client = self.create_client(
-            ChangeState, '/rescue_node/change_state'
-        )
-        self.camera_client = self.create_client(
-            ChangeState, '/camera_node/change_state'
+            ChangeState, f'/{self.rescue_node}/change_state'
         )
 
         self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
@@ -130,7 +132,6 @@ class StateMachineNode(Node):
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE
             )
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.camera_client, Transition.TRANSITION_DEACTIVATE)
 
 
 def main(args=None):
