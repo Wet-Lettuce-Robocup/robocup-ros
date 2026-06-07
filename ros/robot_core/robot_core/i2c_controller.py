@@ -1,19 +1,21 @@
-import board
-import busio
+try:
+    import adafruit_vl53l1x
+    import board
+    import busio
+
+except ImportError:
+    from unittest.mock import MagicMock
+
+    adafruit_vl53l1x = MagicMock()
+    board = MagicMock()
+    busio = MagicMock()
+
 from gpiozero import OutputDevice
 import rclpy
 from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
 from std_msgs.msg import Float32, Int32
-from unittest.mock import MagicMock
-
-
-try:
-    import adafruit_vl53l1x
-
-except ImportError:
-    adafruit_vl53l1x = MagicMock()
 
 
 class I2CBusController(Node):

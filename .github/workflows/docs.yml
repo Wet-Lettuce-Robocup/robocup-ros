@@ -15,6 +15,8 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-noble-latest
     strategy:
       matrix:
         ros-distro: [kilted]
@@ -24,11 +26,6 @@ jobs:
         uses: actions/checkout@v6
         with:
           submodules: recursive # To include submodules
-
-      - name: Setup ROS 2
-        uses: ros-tooling/setup-ros@v0.7
-        with:
-          required-ros-distributions: ${{ matrix.ros-distro }}
 
       - name: Install rosdoc2 and dependencies
         shell: bash
