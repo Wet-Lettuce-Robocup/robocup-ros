@@ -31,8 +31,11 @@ class ServoController(Node):
     Handles controlling a servo through sending commands to STM32 over I2C, and enabling
     servos through a GPIO pin connected to a mosfet in series with the servo power.
 
-    :ivar listen_topic: The topic subscribed to for angle commands. All angles are in
-        radians.
+    .. note::
+
+        All angles are in radians.
+
+    :ivar listen_topic: The topic subscribed to for angle commands.
     :type listen_topic: str
     :ivar servo_id: The ID of the servo on the STM32 to be controlled.
     :type servo_id: int
@@ -73,7 +76,15 @@ class ServoController(Node):
 
     @staticmethod
     def rads_to_degrees(angle: float) -> float:
-        """Convert radians to degrees."""
+        """
+        Convert radians to degrees.
+
+        :param angle: Angle in radians.
+        :type angle: float
+
+        :returns: Angle in degrees.
+        :rtype: float
+        """
         return angle * 180 / math.pi
 
     def servo_callback(self, msg: Float32) -> None:
@@ -84,7 +95,7 @@ class ServoController(Node):
         to send to the STM32 over I2C.
 
         :param msg: Angle to set servo to in radians.
-        :type msg: float
+        :type msg: Float32
         """
         degrees = int(self.rads_to_degrees(msg.data))
         degrees = min(max(degrees, 0), 180) & 0xFF

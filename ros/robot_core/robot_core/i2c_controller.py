@@ -44,6 +44,90 @@ class I2CBusController(Node):
     by routing all I2C requests through one node instead of each individual
     node which requires I2C using SMBUS.
 
+    Example usage:
+
+    .. code-block:: python
+
+        from rclpy.node import Node
+        from rclpy.task import Future
+        from robot_msgs.srv import I2CRead, I2CWrite
+
+        class SampleNode(Node):
+            def __init__(self):
+                super().__init__('sample_node')
+
+                # Create reading client and future variable
+                # The future variable allows for a function to be called once the
+                # I2C request is fulfilled. It must be a class variable otherwise
+                # when it goes out of scope it will be deleted and the function
+                # won't get called.
+                self.i2c_read_client = self.create_client(I2CRead, 'i2c_read')
+                self.read_future: Future[I2CRead.Response] | None = None
+
+                # Wait until the I2C client comes online
+                while not self.i2c_read_client.wait_for_service(timeout_sec=1):
+                    self.get_logger().info('Waiting for I2C service...')
+
+                # Same thing but for writing client
+                self.i2c_write_client = self.create_client(I2CWrite, 'i2c_write')
+                self.write_future: Future[I2CWrite.Response] | None = None
+
+                while not self.i2c_write_client.wait_for_service(timeout_sec=1):
+                    self.get_logger().info('Waiting for I2C service...')
+
+            def i2c_read_callback(self, future: Future[I2CRead.Response]):
+                try:
+                    response: I2CRead.Response | None = future.result()
+
+                    if response is None:
+                        raise Exception('No response')
+
+                    if not response.success:
+                        raise Exception(response.message)
+
+                    data = response.data
+
+                    # Process data
+
+                except Exception as e:
+                    self.get_logger().error(f'Service call failed: {e}')
+
+
+            def read_data(self, address, command, length):
+                request = I2CWrite.Request()
+
+                request.device_address = address
+                request.register_address = command
+                request.length = length
+
+                self.read_future = self.cli.call_async(request)
+                self.read_future.add_done_callback(self.i2c_callback)
+
+            def i2c_write_callback(self, future: Future[I2CWrite.Response]):
+                try:
+                    response: I2CWrite.Response | None = future.result()
+
+                    if response is None:
+                        raise Exception('No response')
+
+                    if not response.success:
+                        raise Exception(response.message)
+
+                except Exception as e:
+                    self.get_logger().error(f'Service call failed: {e}')
+
+
+            def write_data(self, address, command, data):
+                request = I2CWrite.Request()
+
+                request.device_address = address
+                request.register_address = command
+                request.data = data
+
+                self.write_future = self.cli.call_async(request)
+                self.write_future.add_done_callback(self.i2c_callback)
+
+
     :cvar STM_ADDR: I2C address of STM32 MCU.
     :type STM_ADDR: int
     :cvar ULTRASONIC_CMD: I2C command to read ultrasonic data from STM32.

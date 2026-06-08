@@ -23,9 +23,21 @@ from std_msgs.msg import ColorRGBA
 
 
 class StatusLED(Node):
-    """Node for controlling WS2812 leds over SPI interface."""
+    """
+    Node for controlling WS2812 leds over SPI interface.
 
-    def __init__(self):
+    Uses rpi5_ws2812 library which manipulates the SPI data lines to send RGB data
+    to WS2812 leds.
+
+    :ivar spi_bus: The SPI bus to use.
+    :type spi_bus: int
+    :ivar spi_device: The SPI device to use.
+    :type spi_device: int
+    :ivar led_count: The number of connected LEDs.
+    :type led_count: int
+    """
+
+    def __init__(self) -> None:
         super().__init__('status_led')
 
         self.declare_parameter('spi_bus', 0)
@@ -47,6 +59,21 @@ class StatusLED(Node):
 
     @staticmethod
     def ColorRGBA_to_Color(original: ColorRGBA) -> Color:
+        """
+        Convert from ROS2 ColorRGBA type to WS2812 Color type.
+
+        .. note::
+
+            The ROS2 color type has an alpha channel but the WS2812 one
+            does not, so all other color channels are multiplied by the
+            alpha channel.
+
+        :param original: Original color using ROS2 type.
+        :type original: ColorRGBA
+
+        :returns: Color as WS2812 Color type.
+        :rtype: Color
+        """
         color: Color = Color(
             r=np.uint8(original.r * original.a * 255),
             g=np.uint8(original.g * original.a * 255),
@@ -55,7 +82,8 @@ class StatusLED(Node):
 
         return color
 
-    def command_callback(self, msg: LEDCommand):
+    def command_callback(self, msg: LEDCommand) -> None:
+        """Receive and process color command."""
         index: int = msg.index
         color: ColorRGBA = msg.color
 
@@ -67,11 +95,12 @@ class StatusLED(Node):
         self.led_strip.set_pixel_color(index, processed_color)
         self.led_strip.show()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
+        """Clear the LED strip on exit."""
         self.led_strip.clear()
 
 
-def main(args=None):
+def main(args=None) -> None:
     rclpy.init(args=args)
     status_led_node = StatusLED()
     rclpy.spin(status_led_node)

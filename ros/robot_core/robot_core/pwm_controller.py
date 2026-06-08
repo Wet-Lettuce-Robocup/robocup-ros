@@ -30,6 +30,11 @@ class PWMController(Node):
     interface, potentially conflicting with other nodes and creating permission problems,
     or resorting to using software pwm emulation.
 
+    .. warning::
+
+        Period must be set first, then duty cycle, then enable. Failing to use this order
+        can result in undefined behaviour and errors.
+
     :ivar pwm_chip: The PWM chip to use in /sys/class/pwm (eg. '0' for pwmchip0).
     :type pwm_chip: int
     :ivar pwm_channel: The PWM channel to use in the specified chip (eg. '1' for pwm1).
