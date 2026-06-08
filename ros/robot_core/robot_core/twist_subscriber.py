@@ -25,8 +25,7 @@ from robot_msgs.srv import I2CWrite
 
 class TwistSubscriber(Node):
     """
-    Node for listening to velocity commands and sending them to STM32
-    over I2C.
+    Node for listening to velocity commands and sending them to STM32 over I2C.
 
     .. note::
 
@@ -108,7 +107,6 @@ class TwistSubscriber(Node):
         :param msg: Twist velocity command.
         :type msg: Twist
         """
-
         linear_x = int(
             (msg.linear.x * self.speed_mult * 127) / self.max_counts_per_second
         )
