@@ -24,6 +24,8 @@ from std_msgs.msg import Bool, Int32
 
 
 class State(Enum):
+    """Current state of the robot."""
+
     INIT = 0
     LINE_FOLLOWING = 1
     RESCUE = 2

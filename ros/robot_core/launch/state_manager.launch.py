@@ -118,21 +118,24 @@ def generate_launch_description():
     pwm_0_controller = Node(
         package='robot_core',
         executable='pwm_controller',
-        name='pwm0',
+        name='pwm_controller',
+        namespace='pwm0',
         output='screen',
         parameters=[config],
     )
     pwm_1_controller = Node(
         package='robot_core',
         executable='pwm_controller',
-        name='pwm1',
+        name='pwm_controller',
+        namespace='pwm1',
         output='screen',
         parameters=[config],
     )
     pwm_2_controller = Node(
         package='robot_core',
         executable='pwm_controller',
-        name='pwm2',
+        name='pwm_controller',
+        namespace='pwm2',
         output='screen',
         parameters=[config],
     )

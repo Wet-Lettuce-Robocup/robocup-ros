@@ -26,18 +26,26 @@ from std_msgs.msg import Float32
 
 class ServoController(Node):
     """
-    Node providing topics to allow for servos to be controlled over i2c.
+    Node providing topics to allow for servos to be controlled over I2C.
 
-    Attributes
-    ----------
-        listen_topic (str): The topic subscribed to for angle commands. All angles are in radians.
-        servo_id (int): The ID of the servo on the STM32 to be controlled.
-        i2c_address (int): The I2C address of the STM32.
-        servo_cmd (int): The command sent to the STM32 to set servos.
+    Handles controlling a servo through sending commands to STM32 over I2C, and enabling
+    servos through a GPIO pin connected to a mosfet in series with the servo power.
+
+    :ivar listen_topic: The topic subscribed to for angle commands. All angles are in
+        radians.
+    :type listen_topic: str
+    :ivar servo_id: The ID of the servo on the STM32 to be controlled.
+    :type servo_id: int
+    :ivar i2c_address: The I2C address of the STM32.
+    :type i2c_address: int
+    :ivar servo_cmd: The command sent to the STM32 to set servos.
+    :type servo_cmd: int
+    :ivar gpio_pin: Pin for controlling mosfet gate to power the servo.
+    :type gpio_pin: int
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('servo_controller')
 
         self.declare_parameter('listen_topic', '/servo/default')
@@ -64,10 +72,20 @@ class ServoController(Node):
         )
 
     @staticmethod
-    def rads_to_degrees(angle: float):
+    def rads_to_degrees(angle: float) -> float:
+        """Convert radians to degrees."""
         return angle * 180 / math.pi
 
     def servo_callback(self, msg: Float32) -> None:
+        """
+        Set servo position.
+
+        Receives servo position in radians, and converts it to degrees
+        to send to the STM32 over I2C.
+
+        :param msg: Angle to set servo to in radians.
+        :type msg: float
+        """
         degrees = int(self.rads_to_degrees(msg.data))
         degrees = min(max(degrees, 0), 180) & 0xFF
 
@@ -82,7 +100,8 @@ class ServoController(Node):
 
         self.gpio_device.on()
 
-    def i2c_callback(self, future: Future[I2CWrite.Response]):
+    def i2c_callback(self, future: Future[I2CWrite.Response]) -> None:
+        """Check if the I2C command was successful."""
         try:
             response: I2CWrite.Response | None = future.result()
 
@@ -95,7 +114,8 @@ class ServoController(Node):
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
 
-    def cleanup(self):
+    def cleanup(self) -> None:
+        """Turn off servo on node exit."""
         self.gpio_device.off()
 
 
