@@ -21,7 +21,7 @@ from std_msgs.msg import Bool
 
 
 class ButtonPublisher(Node):
-    """Node for detecting and publishing button presses."""
+    """Node for reading button presses and publishing them to ROS2 topics."""
 
     def __init__(self) -> None:
         super().__init__('button_publisher')
@@ -43,6 +43,7 @@ class ButtonPublisher(Node):
         self.button.when_deactivated = self.on_release
 
     def on_press(self) -> None:
+        """Publish that button has been pressed."""
         msg: Bool = Bool()
 
         msg.data = True
@@ -50,6 +51,7 @@ class ButtonPublisher(Node):
         self.pub.publish(msg)
 
     def on_release(self) -> None:
+        """Publish that button has been released."""
         msg: Bool = Bool()
 
         msg.data = False

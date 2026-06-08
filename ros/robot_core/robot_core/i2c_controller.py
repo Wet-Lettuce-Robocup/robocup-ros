@@ -35,13 +35,58 @@ from std_msgs.msg import Float32, Int32
 
 
 class I2CBusController(Node):
-    """Class for controlling I2C bus to prevent collisions."""
+    """
+    Central I2C control node.
+
+    Listens to services to handle I2C read and write commands,
+    and periodically reads STM32 MCU for sensor readings and publishes them
+    to ROS topics. The main purpose of this node is to prevent I2C collisions
+    by routing all I2C requests through one node instead of each individual
+    node which requires I2C using SMBUS.
+
+    :cvar STM_ADDR: I2C address of STM32 MCU.
+    :type STM_ADDR: int
+    :cvar ULTRASONIC_CMD: I2C command to read ultrasonic data from STM32.
+    :type ULTRASONIC_CMD: int
+    :cvar TEMP_CMD: I2C command to read temperature data from STM32.
+    :type TEMP_CMD: int
+
+    :ivar read_srv: Service for reading I2C data.
+    :type read_srv: rclpy.service
+    :ivar write_srv: Service for writing I2C data.
+    :type write_srv: rclpy.service
+
+    :ivar claw_tof_en: Enable pin of claw TOF sensor.
+    :type claw_tof_en: OutputDevice
+    :ivar right_tof_en: Enable pin of right TOF sensor.
+    :type right_tof_en: OutputDevice
+    :ivar front_tof_en: Enable pin of front TOF sensor.
+    :type right_tof_en: OutputDevice
+
+    :ivar claw_tof_addr: Target I2C address of claw TOF sensor.
+    :type claw_tof_addr: int
+    :ivar right_tof_addr: Target I2C address of right TOF sensor.
+    :type right_tof_addr: int
+    :ivar front_tof_addr: Target I2C address of front TOF sensor.
+    :type front_tof_addr: int
+
+    :ivar claw_tof_enabled: Status of whether claw TOF sensor is connected and
+        successfully started.
+    :type claw_tof_enabled: bool
+    :ivar right_tof_enabled: Status of whether right TOF sensor is connected and
+        successfully started.
+    :type right_tof_enabled: bool
+    :ivar front_tof_enabled: Status of whether front TOF sensor is connected and
+        successfully started.
+    :type front_tof_enabled: bool
+
+    """
 
     STM_ADDR = 0x67
     ULTRASONIC_CMD = 0x83
     TEMP_CMD = 0x84
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('i2c_controller')
 
         try:
@@ -76,7 +121,15 @@ class I2CBusController(Node):
 
         self.timer = self.create_timer(0.1, self.timer_callback)
 
-    def init_tof(self):
+    def init_tof(self) -> None:
+        """
+        Attempt to initialize all TOF sensors.
+
+        For each TOF sensor, sets the enable pin high and attempts to
+        connect via I2C. If it cannot be connected, it is marked as
+        disabled. If it is connected, its I2C address is changed to a
+        previously defined value.
+        """
         self.adafruit_i2c = busio.I2C(board.SCL, board.SDA)
 
         try:
@@ -115,6 +168,13 @@ class I2CBusController(Node):
     def handle_read(
         self, request: I2CRead.Request, response: I2CRead.Response
     ) -> I2CRead.Response:
+        """
+        Attempt to read data over I2C.
+
+        Connects to the device given by addr, and reads length bytes from
+        location cmd. Returns either the received data, or an empty data
+        array with success set to False.
+        """
         addr = request.device_address
         cmd = request.register_address
         data_len = request.length
@@ -136,6 +196,13 @@ class I2CBusController(Node):
     def handle_write(
         self, request: I2CWrite.Request, response: I2CWrite.Response
     ) -> I2CWrite.Response:
+        """
+        Attempt to write data over I2C.
+
+        Connects to the device given by addr, and writes data to location
+        cmd. Returns either success True or success False with an error
+        message.
+        """
         addr = request.device_address
         cmd = request.register_address
         data = request.data
@@ -153,6 +220,7 @@ class I2CBusController(Node):
         return response
 
     def read_ultrasonic(self) -> int | None:
+        """Attempt to read ultrasonic sensor data from STM32."""
         try:
             msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.ULTRASONIC_CMD, 4)
 
@@ -164,6 +232,7 @@ class I2CBusController(Node):
             self.get_logger().error(f'I2C read failed! {e}')
 
     def read_temp(self) -> float | None:
+        """Attempt to read temperature data from STM32."""
         try:
             msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.TEMP_CMD, 4)
 
@@ -174,7 +243,14 @@ class I2CBusController(Node):
         except IOError as e:
             self.get_logger().error(f'I2C read failed! {e}')
 
-    def publish_tof(self):
+    def publish_tof(self) -> None:
+        """
+        Attempt to read and publish data from all TOF sensors.
+
+        For each sensor, checks if it is enabled. Then, attempts to read the
+        distance data over I2C. If data is received, converts to millimetres
+        and publishes to ROS2 topic.
+        """
         msg = Int32()
 
         if self.claw_tof_enabled:
@@ -216,7 +292,13 @@ class I2CBusController(Node):
 
             self.front_tof_pub.publish(msg)
 
-    def timer_callback(self):
+    def timer_callback(self) -> None:
+        """
+        Periodically read sensor data.
+
+        Reads and publishes TOF sensors, ultrasonic sensor,
+        and STM32 temperature.
+        """
         self.publish_tof()
 
         msg = Int32()
@@ -238,7 +320,7 @@ class I2CBusController(Node):
         self.stm_temp_pub.publish(temp_msg)
 
 
-def main(args=None):
+def main(args=None) -> None:
     rclpy.init(args=args)
     node = I2CBusController()
     rclpy.spin(node)
