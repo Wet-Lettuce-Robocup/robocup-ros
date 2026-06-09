@@ -1,3 +1,19 @@
+# Robot Core
+# Copyright (C) 2026  Dry Lettuce
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import math
 
 from geometry_msgs.msg import Point, Quaternion, Twist, Vector3
@@ -9,8 +25,46 @@ from robot_msgs.srv import I2CRead
 
 
 class OdomPublisher(Node):
-    ENCODER_REQUEST: bytes = b'\x40'
-    ENCODER_RESPONSE: bytes = b'\x41'
+    """
+    Node for reading and publishing odometry data.
+
+    Reads encoder values from STM32 and uses the change in values to
+    calculate movement velocity and direction. Publishes this data to
+    /odom topic.
+
+    :cvar STM_ADDR: I2C address of STM32 MCU.
+    :type STM_ADDR: int
+    :cvar VEL_CMD: I2C command to read velocity data from STM32.
+    :type VEL_CMD: int
+    :cvar VEL_LEN: Length of velocity data in bytes to read over I2C.
+    :type VEL_LEN: int
+    :cvar ENC_CMD: I2C command to read encoder data from STM32.
+    :type ENC_CMD: int
+    :cvar ENC_LEN: Length of encoder data in bytes to read over I2C.
+    :type ENC_LEN: int
+
+    :ivar wheel_dist: Distance between left and right wheels in meters.
+    :type wheel_dist: float
+    :ivar counts_per_revolution: Number of encoder counts per revolution of
+        each wheel.
+    :type counts_per_revolution: float
+    :ivar wheel_radius: Radius of wheels in meters.
+    :type wheel_radius: float
+
+    :ivar velocities: Velocities of all 4 motors in encoder counts per second.
+        Order: front left, front right, back left, back right.
+    :type velocities: tuple[int, int, int, int]
+    :ivar encoders: Encoder counts for all 4 motors.
+        Order: front left, front right, back left, back right.
+    :type encoders: tuple[int, int, int, int]
+
+    """
+
+    STM_ADDR = 0x67
+    VEL_CMD = 0x81
+    VEL_LEN = 16
+    ENC_CMD = 0x82
+    ENC_LEN = 16
 
     def __init__(self):
         super().__init__('odom_publisher')
@@ -35,12 +89,6 @@ class OdomPublisher(Node):
         self.vx = 0.0  # m/s
         self.vth = 0.0  # rad/s
 
-        self.addr = 0x67
-        self.vel_cmd = 0x81
-        self.vel_len = 16
-        self.enc_cmd = 0x82
-        self.enc_len = 16
-
         self.velocities: tuple[int, int, int, int] = 0, 0, 0, 0
         self.encoders: tuple[int, int, int, int] = 0, 0, 0, 0
 
@@ -57,17 +105,24 @@ class OdomPublisher(Node):
 
         self.wheel_circumefrence = math.pi * (self.wheel_radius**2)
 
-    def request_vel(self):
+    def request_vel(self) -> None:
+        """Request velocity data from the STM32 over I2C."""
         request: I2CRead.Request = I2CRead.Request()
 
-        request.device_address = self.addr
-        request.register_address = self.vel_cmd
-        request.length = self.vel_len
+        request.device_address = self.STM_ADDR
+        request.register_address = self.VEL_CMD
+        request.length = self.VEL_LEN
 
         self.vel_future = self.cli.call_async(request)
         self.vel_future.add_done_callback(self.vel_callback)
 
-    def vel_callback(self, future: Future[I2CRead.Response]):
+    def vel_callback(self, future: Future[I2CRead.Response]) -> None:
+        """
+        Handle received velocity data.
+
+        Converts received data into integers for all 4 motors and updates
+        velocities attribute with new values.
+        """
         try:
             response: I2CRead.Response | None = future.result()
 
@@ -89,17 +144,24 @@ class OdomPublisher(Node):
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
 
-    def request_enc(self):
+    def request_enc(self) -> None:
+        """Request encoder data from the STM32 over I2C."""
         request: I2CRead.Request = I2CRead.Request()
 
-        request.device_address = self.addr
-        request.register_address = self.enc_cmd
-        request.length = self.enc_len
+        request.device_address = self.STM_ADDR
+        request.register_address = self.ENC_CMD
+        request.length = self.ENC_CMD
 
         self.enc_future = self.cli.call_async(request)
         self.enc_future.add_done_callback(self.enc_callback)
 
-    def enc_callback(self, future: Future[I2CRead.Response]):
+    def enc_callback(self, future: Future[I2CRead.Response]) -> None:
+        """
+        Handle received encoder data.
+
+        Converts received data into integers for all 4 motors and updates
+        encoders attribute with new values.
+        """
         try:
             response: I2CRead.Response | None = future.result()
 
@@ -121,7 +183,15 @@ class OdomPublisher(Node):
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
 
-    def publish_odom(self):
+    def publish_odom(self) -> None:
+        """
+        Calculate and publish current odometry data.
+
+        Finds average velocity of wheels on each side using encoder data.
+        Uses the velocity of each side to calculate both linear and angular velocity.
+        Updates current position and angle, and publishes position and velocity to
+        odometry topic.
+        """
         current_time = self.get_clock().now()
         dt = 0.1
 
@@ -134,6 +204,7 @@ class OdomPublisher(Node):
 
         enc_fl, enc_fr, enc_bl, enc_br = self.encoders
 
+        # Find average velocity of each side
         d_l = (enc_fl - self.last_enc_fl + enc_bl - self.last_enc_bl) / 2
         self.last_enc_fl = enc_fl
         self.last_enc_bl = enc_bl
@@ -142,6 +213,7 @@ class OdomPublisher(Node):
         self.last_enc_fr = enc_fr
         self.last_enc_br = enc_br
 
+        # Convert encoder counts per second to radians per second
         angular_mult = 2 * math.pi * self.wheel_radius / self.counts_per_revolution
 
         angle_change_l = d_l * angular_mult
@@ -177,7 +249,7 @@ class OdomPublisher(Node):
 
         self.publisher_.publish(odom)
 
-    def euler_to_quaternion(self, roll, pitch, yaw):
+    def euler_to_quaternion(self, roll: float, pitch: float, yaw: float) -> list[float]:
         """Convert Euler angles to quaternion."""
         qx = math.sin(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) - math.cos(
             roll / 2
@@ -194,7 +266,7 @@ class OdomPublisher(Node):
         return [qx, qy, qz, qw]
 
 
-def main(args=None):
+def main(args=None) -> None:
     rclpy.init(args=args)
     node = OdomPublisher()
     rclpy.spin(node)

@@ -1,4 +1,4 @@
-docker compose build
+docker build --target robot-ros-builder -t robot-ros-tests .
 
 docker run -it \
   --privileged \
@@ -7,5 +7,5 @@ docker run -it \
   -v /run/udev/:/run/udev/ \
   --group-add video \
   -e HOME=/tpm \
-  robocup-ros-ros \
+  robot-ros-tests \
   colcon test --event-handlers console_direct+
