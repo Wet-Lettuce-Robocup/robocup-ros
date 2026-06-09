@@ -1,3 +1,19 @@
+# Robot Core
+# Copyright (C) 2026  Dry Lettuce
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import math
 
 from geometry_msgs.msg import Twist
@@ -11,7 +27,71 @@ from robot_msgs.action import Move
 
 
 class MovementNode(Node):
-    """Class for movement actions."""
+    """
+    Node for movement actions.
+
+    Handles action calls for higher level robot movement, specifically
+    targetting a particular movement distance and angle in which to move.
+    Accepts distance, angle and velocity values for movement, periodically
+    updates with distance moved, and returns success status.
+
+    Example Usage:
+
+    .. code-block::
+
+        import math
+
+        import rclpy
+        from rclpy.node import Node
+        from rclpy.action import ActionClient
+        from robot_msgs.action import Move
+
+        class ActionClient(Node):
+            def __init__(self):
+                super().__init__('my_action_client')
+                # Initialize the client
+                self._action_client = ActionClient(self, Move, 'move')
+
+            def send_goal(self, order):
+                goal_msg = Move.Goal()
+                goal_msg.distance = 1
+                goal_msg.angle = math.pi / 2
+                goal_msg.vel = 0.1
+
+                # Wait for the server to spin up
+                self._action_client.wait_for_server()
+
+                # Send goal asynchronously and hook up the response callback
+                self._send_goal_future = self._action_client.send_goal_async(
+                    goal_msg,
+                    feedback_callback=self.feedback_callback
+                )
+                self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+            def goal_response_callback(self, future):
+                goal_handle = future.result()
+                if not goal_handle.accepted:
+                    self.get_logger().info('Goal rejected')
+                    return
+
+                self.get_logger().info('Goal accepted')
+                # Request the final result
+                self._get_result_future = goal_handle.get_result_async()
+                self._get_result_future.add_done_callback(self.get_result_callback)
+
+            def get_result_callback(self, future):
+                result = future.result().result
+                self.get_logger().info(f'Result received: {result.success}')
+
+            def feedback_callback(self, feedback_msg):
+                feedback = feedback_msg.feedback
+                self.get_logger().info(f'Current distance: {feedback.distance_travelled},
+                                         Current angle: {feedback.angle_turned}')
+
+    :ivar wheel_dist: Distance between wheels on each side.
+    :type wheel_dist: float
+
+    """
 
     def __init__(self) -> None:
         super().__init__('movement_node')
@@ -50,6 +130,18 @@ class MovementNode(Node):
         self.current_pose = (x, y, yaw)
 
     async def execute_callback(self, goal_handle) -> Move.Result:
+        """
+        Execute movement command.
+
+        First checks if odometry data exists yet, and returns an error if not.
+        Then, in a loop, calculates difference in angle between current pose and
+        target pose, and moves towards the target. Once the target is reached, sends
+        stop command and returns success.
+
+        :param goal_handle: Movement action goal.
+        :returns: Result of movement including success.
+        :rtype: Move.Result
+        """
         self.get_logger().info('Executing movement action...')
 
         request = goal_handle.request
@@ -131,7 +223,7 @@ class MovementNode(Node):
         self.get_logger().info('Robot stopped')
 
 
-def main(args=None):
+def main(args=None) -> None:
     rclpy.init(args=args)
     node = MovementNode()
 
