@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default_world">
+
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1.0</diffuse>
+      <specular>0.2 0.2 0.2 1.0</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>20 20</size> </plane>
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <box>
+              <size>10.0 10.0 0.1</size> <!-- Must match the aspect ratio of your image -->
+            </box>
+          </geometry>
+        </visual>
+
+        
+      </link>
+    </model>
+
+    <model name="easy_image_ground">
+      <static>true</static>
+      <link name="link">
+        
+        <collision name="collision">
+          <geometry>
+            <!-- Set the size in meters (Width, Length, Thickness) -->
+            <box><size>16.0 9.0 0.01</size></box> 
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <!-- Match your image's aspect ratio here so it doesn't look stretched -->
+            <box><size>16.0 9.0 0.01</size></box> 
+          </geometry>
+          <material>
+            <pbr>
+              <metal>
+                <!-- ─── JUST USE THE ABSOLUTE PATH TO YOUR IMAGE HERE ─── -->
+                <albedo_map>/home/william/robocup-ros/ros/robot_core/media/textures/course.png</albedo_map>
+                <roughness>0.7</roughness>
+                <metalness>0.1</metalness>
+              </metal>
+            </pbr>
+          </material>
+        </visual>
+        
+      </link>
+    </model>
+
+
+  </world>
+</sdf>

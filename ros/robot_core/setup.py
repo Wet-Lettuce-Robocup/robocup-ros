@@ -33,6 +33,22 @@ setup(
         (os.path.join('share', package_name), ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (
+            os.path.join('share', package_name, 'worlds'),
+            glob(os.path.join('worlds', '*.sdf')),
+        ),
+        (
+            os.path.join('share', package_name, 'models'),
+            glob(os.path.join('models', '*.sdf')),
+        ),
+        (
+            os.path.join('share', package_name, 'media', 'materials', 'scripts'),
+            glob(os.path.join('media', 'materials', 'scripts', '*.material')),
+        ),
+        (
+            os.path.join('share', package_name, 'media', 'textures'),
+            glob(os.path.join('media', 'textures', '*.[pP][nN][gG]')),
+        ),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
