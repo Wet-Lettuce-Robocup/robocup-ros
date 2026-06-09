@@ -1,3 +1,19 @@
+# Robot Core
+# Copyright (C) 2026  Dry Lettuce
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from enum import Enum
 
 from gpiozero import OutputDevice
@@ -8,6 +24,8 @@ from std_msgs.msg import Bool, Int32
 
 
 class State(Enum):
+    """Current state of the robot."""
+
     INIT = 0
     LINE_FOLLOWING = 1
     RESCUE = 2
@@ -22,12 +40,32 @@ class StateMachineNode(Node):
     Configure names for line follow and rescue nodes in config file.
     Defaults are line_follower and rescue.
 
-    Topics for changing states:
-        Rescue: /rescue_active (Bool)
-        Idle: /idle_button (Bool)
+    .. note::
+
+        Topics for changing states:
+
+        * **Rescue**: /rescue_active (Bool)
+        * **Idle**: /idle_button (Bool)
+
+    .. note::
+
+        Line follow and rescue nodes must be lifecycle notes so that they
+        can be enabled and disabled depending on whichever section of the
+        course the robot is on.
+
+    :ivar line_follow_node: Name of line follow node.
+    :type line_follow_node: str
+    :ivar rescue_node: Name of rescue node.
+    :type rescue_node: str
+
+    :ivar en_3v3: Enable pin for 3.3V voltage regulator.
+    :type en_3v3: OutputDevice
+    :ivar en_5v: Enable pin for 5V voltage regulator.
+    :type en_5v: OutputDevice
+
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('state_machine')
         self.current_state = State.INIT
 
@@ -61,24 +99,70 @@ class StateMachineNode(Node):
 
         self.timer = self.create_timer(0.05, self.state_loop)
 
-    def change_node_state(self, client, transition_id):
+    def change_node_state(self, client, transition_id) -> None:
+        """
+        Change the state of a lifecycle node.
+
+        .. warning::
+
+            Lifecycle node state changes must follow the correct order.
+            For example, lifecycle nodes must be configured before being activated.
+            Failing to do so will result in errors.
+
+        :param client: The lifecycle node to change.
+        :type client: rclpy.client
+        :param transition_id: Target lifecycle node state.
+        :type transition_id: Transition
+        """
         req = ChangeState.Request()
-        req.transition.id = transition_id  # e.g., Transition.TRANSITION_ACTIVATE
+        req.transition.id = transition_id
         future = client.call_async(req)
         rclpy.spin_until_future_complete(self, future)
 
-    def rescue_active_callback(self, msg):
+    def rescue_active_callback(self, msg: Bool) -> None:
+        """
+        Set whether or not rescue should be active.
+
+        Should be called by the line follow node when a rescue zone
+        is detected, and by the rescue node after exiting rescue.
+
+        :param msg: Rescue status.
+        :type msg: Bool
+        """
         self.rescue_active = msg.data
 
     def idle_button_callback(self, msg: Bool):
+        """
+        Read idle button status.
+
+        Toggles idle state once button is released.
+
+        :param msg: Idle button status.
+        :type msg: Bool
+        """
         if not msg.data:
             self.idle_toggle = not self.idle_toggle
 
     def clean_exit(self):
+        """Disable voltage regulators on exit."""
         self.en_3v3.off()
         self.en_5v.off()
 
     def state_loop(self):
+        """
+        Run main control loop for robot.
+
+        Begins in idle state.
+
+        **Idle**: checks if idle button has been toggled. If it has, transitions
+        into line follow state.
+
+        **Line Follow**: checks if rescue_active or idle_toggle is active,
+        in which case it will transition to rescue or idle state respectively.
+
+        **Rescue state**, checks if rescue_active is inactive or idle_toggle is
+        active, in which case it will transition to line follow or idle state respectively.
+        """
         from lifecycle_msgs.msg import Transition
 
         if self.current_state == State.INIT:
@@ -91,9 +175,9 @@ class StateMachineNode(Node):
                 fan_msg.data = 100
                 self.fan_pub.publish(fan_msg)
 
-                # self.change_node_state(
-                #     self.line_follower_client, Transition.TRANSITION_ACTIVATE
-                # )
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
+                )
 
                 self.current_state = State.LINE_FOLLOWING
 
@@ -102,10 +186,10 @@ class StateMachineNode(Node):
             fan_msg.data = 0
             self.fan_pub.publish(fan_msg)
 
-            # self.change_node_state(
-            #     self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-            # )
-            # self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+            )
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:

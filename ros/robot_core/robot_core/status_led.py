@@ -1,3 +1,19 @@
+# Robot Core
+# Copyright (C) 2026  Dry Lettuce
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import numpy as np
 import rclpy
 from rclpy.node import Node
@@ -7,9 +23,21 @@ from std_msgs.msg import ColorRGBA
 
 
 class StatusLED(Node):
-    """Node for controlling WS2812 leds over SPI interface."""
+    """
+    Node for controlling WS2812 leds over SPI interface.
 
-    def __init__(self):
+    Uses rpi5_ws2812 library which manipulates the SPI data lines to send RGB data
+    to WS2812 leds.
+
+    :ivar spi_bus: The SPI bus to use.
+    :type spi_bus: int
+    :ivar spi_device: The SPI device to use.
+    :type spi_device: int
+    :ivar led_count: The number of connected LEDs.
+    :type led_count: int
+    """
+
+    def __init__(self) -> None:
         super().__init__('status_led')
 
         self.declare_parameter('spi_bus', 0)
@@ -31,6 +59,21 @@ class StatusLED(Node):
 
     @staticmethod
     def ColorRGBA_to_Color(original: ColorRGBA) -> Color:
+        """
+        Convert from ROS2 ColorRGBA type to WS2812 Color type.
+
+        .. note::
+
+            The ROS2 color type has an alpha channel but the WS2812 one
+            does not, so all other color channels are multiplied by the
+            alpha channel.
+
+        :param original: Original color using ROS2 type.
+        :type original: ColorRGBA
+
+        :returns: Color as WS2812 Color type.
+        :rtype: Color
+        """
         color: Color = Color(
             r=np.uint8(original.r * original.a * 255),
             g=np.uint8(original.g * original.a * 255),
@@ -39,7 +82,8 @@ class StatusLED(Node):
 
         return color
 
-    def command_callback(self, msg: LEDCommand):
+    def command_callback(self, msg: LEDCommand) -> None:
+        """Receive and process color command."""
         index: int = msg.index
         color: ColorRGBA = msg.color
 
@@ -51,11 +95,12 @@ class StatusLED(Node):
         self.led_strip.set_pixel_color(index, processed_color)
         self.led_strip.show()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
+        """Clear the LED strip on exit."""
         self.led_strip.clear()
 
 
-def main(args=None):
+def main(args=None) -> None:
     rclpy.init(args=args)
     status_led_node = StatusLED()
     rclpy.spin(status_led_node)

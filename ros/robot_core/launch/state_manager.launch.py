@@ -1,3 +1,19 @@
+# Robot Core
+# Copyright (C) 2026  Dry Lettuce
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -102,21 +118,24 @@ def generate_launch_description():
     pwm_0_controller = Node(
         package='robot_core',
         executable='pwm_controller',
-        name='pwm0',
+        name='pwm_controller',
+        namespace='pwm0',
         output='screen',
         parameters=[config],
     )
     pwm_1_controller = Node(
         package='robot_core',
         executable='pwm_controller',
-        name='pwm1',
+        name='pwm_controller',
+        namespace='pwm1',
         output='screen',
         parameters=[config],
     )
     pwm_2_controller = Node(
         package='robot_core',
         executable='pwm_controller',
-        name='pwm2',
+        name='pwm_controller',
+        namespace='pwm2',
         output='screen',
         parameters=[config],
     )

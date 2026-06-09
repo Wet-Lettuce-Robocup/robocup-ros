@@ -1,72 +1,71 @@
 state_machine:
   ros__parameters:
     line_follow_node: /line_follow/core_loop
-    rescue_node:
 
 servo_grab:
   ros__parameters:
-    listen_topic: "/servo/grab"
+    listen_topic: '/servo/grab'
     servo_id: 0
     gpio_pin: 4
 
 servo_lift:
   ros__parameters:
-    listen_topic: "/servo/lift"
+    listen_topic: '/servo/lift'
     servo_id: 1
     gpio_pin: 0
 
 servo_tray_release:
   ros__parameters:
-    listen_topic: "/servo/tray_release"
+    listen_topic: '/servo/tray_release'
     servo_id: 2
     gpio_pin: 1
 
 idle_button:
   ros__parameters:
     gpio_pin: 6
-    publish_topic: "/idle_button"
+    publish_topic: '/idle_button'
     pull_up: True
 
-pwm0:
-  ros__parameters:
-    pwm_channel: 0
-    subscribe_topic: "/pwm0"
+/pwm0:
+  pwm_controller:
+    ros__parameters:
+      pwm_channel: 0
 
-pwm1:
-  ros__parameters:
-    pwm_channel: 1
-    subscribe_topic: "/pwm1"
+/pwm1:
+  pwm_controller:
+    ros__parameters:
+      pwm_channel: 1
 
-pwm2:
-  ros__parameters:
-    pwm_channel: 2
-    subscribe_topic: "/pwm2"
+/pwm2:
+  pwm_controller:
+    ros__parameters:
+      pwm_channel: 2
 
 /front_camera:
   camera_node:
     ros__parameters:
       camera: 0
-      role: "viewfinder"
-      format: "XRGB8888"
+      role: 'viewfinder'
+      format: 'XRGB8888'
       width: 1536
       height: 864
-      sensor_mode: "2304:1296"
+      sensor_mode: '2304:1296'
       orientation: 180
 
 /down_camera:
   camera_node:
     ros__parameters:
       camera: 1
-      role: "viewfinder"
-      format: "XRGB8888"
+      role: 'viewfinder'
+      format: 'XRGB8888'
       width: 1536
       height: 864
-      sensor_mode: "2304:1296"
+      sensor_mode: '2304:1296'
       orientation: 0
 
 bno08x_driver:
   ros__parameters:
-    frame_id: "bno086" # The frame_id to use for the sensor data
+    frame_id: 'bno086' # The frame_id to use for the sensor data
 
     # Communication Interface
     # Select the communication interface to use
@@ -75,8 +74,8 @@ bno08x_driver:
     # (see documentation for more information)
     i2c:
       enabled: true
-      bus: "/dev/i2c-1"
-      address: "0x4A"
+      bus: '/dev/i2c-1'
+      address: '0x4A'
 
     publish:
       magnetic_field:
