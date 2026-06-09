@@ -28,7 +28,7 @@ from robot_msgs.action import Move
 
 class MovementNode(Node):
     """
-    Node for movement actions.
+    Node for movement actions with distance and turn angle.
 
     Handles action calls for higher level robot movement, specifically
     targetting a particular movement distance and angle in which to move.
@@ -37,7 +37,7 @@ class MovementNode(Node):
 
     Example Usage:
 
-    .. code-block::
+    .. code-block:: python
 
         import math
 
@@ -70,8 +70,8 @@ class MovementNode(Node):
 
             def goal_response_callback(self, future):
                 goal_handle = future.result()
+
                 if not goal_handle.accepted:
-                    self.get_logger().info('Goal rejected')
                     return
 
                 self.get_logger().info('Goal accepted')
@@ -87,6 +87,7 @@ class MovementNode(Node):
                 feedback = feedback_msg.feedback
                 self.get_logger().info(f'Current distance: {feedback.distance_travelled},
                                          Current angle: {feedback.angle_turned}')
+
 
     :ivar wheel_dist: Distance between wheels on each side.
     :type wheel_dist: float
