@@ -85,6 +85,19 @@ bno08x_driver:
         enabled: true
         rate: 100 # max 400 Hz
 
+twist_subscriber:
+  ros__parameters:
+    wheel_dist: 0.155
+    counts_per_revolution: 1000.0
+    wheel_radius: 0.04
+    max_counts_per_second: 1800.0
+
+odom_publisher:
+  ros__parameters:
+    wheel_dist: 0.155
+    counts_per_revolution: 1000.0
+    wheel_radius: 0.04
+
 ekf_filter_node:
   ros__parameters:
     # The frequency, in Hz, at which the filter will output a position estimate. Note that the filter will not begin

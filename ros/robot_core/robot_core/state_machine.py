@@ -88,10 +88,10 @@ class StateMachineNode(Node):
 
         # Lifecycle service clients
         self.line_follower_client = self.create_client(
-            ChangeState, f'/{self.line_follow_node}/change_state'
+            ChangeState, f'{self.line_follow_node}/change_state'
         )
         self.rescue_client = self.create_client(
-            ChangeState, f'/{self.rescue_node}/change_state'
+            ChangeState, f'{self.rescue_node}/change_state'
         )
 
         self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
@@ -167,14 +167,13 @@ class StateMachineNode(Node):
 
         if self.current_state == State.INIT:
             # Activate motor control for all states
+            fan_msg = Int32()
+            fan_msg.data = 100
+            self.fan_pub.publish(fan_msg)
             self.current_state = State.IDLE
 
         elif self.current_state == State.IDLE:
             if not self.idle_toggle:
-                fan_msg = Int32()
-                fan_msg.data = 100
-                self.fan_pub.publish(fan_msg)
-
                 self.change_node_state(
                     self.line_follower_client, Transition.TRANSITION_ACTIVATE
                 )
@@ -182,10 +181,6 @@ class StateMachineNode(Node):
                 self.current_state = State.LINE_FOLLOWING
 
         elif self.idle_toggle:
-            fan_msg = Int32()
-            fan_msg.data = 0
-            self.fan_pub.publish(fan_msg)
-
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE
             )
@@ -211,6 +206,9 @@ class StateMachineNode(Node):
                 )
 
         elif self.current_state == State.STOP:
+            fan_msg = Int32()
+            fan_msg.data = 0
+            self.fan_pub.publish(fan_msg)
             # Deactivate all nodes
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE

@@ -187,13 +187,24 @@ class MovementNode(Node):
                 result.success = True
                 break
 
+            linear_vel = max(
+                min(request.distance - dist_traveled, request.vel), -request.vel
+            )
+            angular_vel = max(
+                min(request.angle - angle_traveled, request.vel), -request.vel
+            )
+
             # Send velocity command
             twist = Twist()
-            twist.linear.x = request.vel * 0.6  # simple scaling - can be improved
-            twist.angular.z = (
-                math.copysign(request.vel * 0.8, request.angle)
-                if abs(request.angle) > 0.1
+            twist.linear.x = (
+                linear_vel  # simple scaling - can be improved
+                if abs(linear_vel) > 0.03
                 else 0.0
+            )
+            twist.angular.z = angular_vel if abs(angular_vel) > 0.1 else 0.0
+
+            self.get_logger().info(
+                f'{request.distance - dist_traveled}, {request.angle - angle_traveled}'
             )
 
             self.twist_pub.publish(twist)

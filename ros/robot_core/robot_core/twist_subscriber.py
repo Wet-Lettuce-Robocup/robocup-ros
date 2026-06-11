@@ -54,7 +54,7 @@ class TwistSubscriber(Node):
 
     """
 
-    STM_ADDR: int
+    STM_ADDR: int = 0x67
     DRIVE_REQUEST: int = 0x01
     STOP_REQUEST: int = 0x02
 
@@ -107,30 +107,40 @@ class TwistSubscriber(Node):
         :param msg: Twist velocity command.
         :type msg: Twist
         """
-        linear_x = int(
-            (msg.linear.x * self.speed_mult * 127) / self.max_counts_per_second
-        )
-        angular_z = int(
-            (msg.angular.z * self.speed_mult * 127) / self.max_counts_per_second
-        )
+        linear_x = int(msg.linear.x * self.speed_mult)
+        angular_z = int(msg.angular.z * self.speed_mult)
 
         def fitted(a):
-            return min(max(a, -127), 127)
+            return min(max(a, -self.max_counts_per_second), self.max_counts_per_second)
 
-        linear_x = fitted(linear_x)
-        angular_z = fitted(angular_z)
+        linear_x: int = int(fitted(linear_x))
+        angular_z: int = int(fitted(angular_z))
 
         if angular_z < -60:
             angular_z = -60
 
-        linear_x_byte = int(linear_x) & 0xFF
-        angular_z_byte = int(angular_z) & 0xFF
+        self.get_logger().info(f'{linear_x}, {angular_z}')
 
         request: I2CWrite.Request = I2CWrite.Request()
 
         request.device_address = self.STM_ADDR
         request.register_address = self.DRIVE_REQUEST
-        request.data = [linear_x_byte, 0, angular_z_byte]
+        request.data = [
+            linear_x >> 24 & 0xFF,
+            linear_x >> 16 & 0xFF,
+            linear_x >> 8 & 0xFF,
+            linear_x & 0xFF,
+            0,
+            0,
+            0,
+            0,
+            angular_z >> 24 & 0xFF,
+            angular_z >> 16 & 0xFF,
+            angular_z >> 8 & 0xFF,
+            angular_z & 0xFF,
+        ]
+
+        # self.get_logger().info(f'{linear_x}, {angular_z}')
 
         self.future = self.cli.call_async(request)
         self.future.add_done_callback(self.i2c_callback)
