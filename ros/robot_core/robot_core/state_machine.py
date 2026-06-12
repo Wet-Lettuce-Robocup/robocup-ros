@@ -98,6 +98,8 @@ class StateMachineNode(Node):
         self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
 
         self.timer = self.create_timer(0.05, self.state_loop)
+        self.transition_future = None
+        self.transitioning_num: int = 0
 
     def change_node_state(self, client, transition_id) -> None:
         """
@@ -114,10 +116,16 @@ class StateMachineNode(Node):
         :param transition_id: Target lifecycle node state.
         :type transition_id: Transition
         """
+        self.transitioning_num += 1
         req = ChangeState.Request()
         req.transition.id = transition_id
-        future = client.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
+        self.transition_future = client.call_async(req)
+        self.transition_future.add_done_callback(self.transition_completed_callback)
+        self.get_logger().info(f'Active transitions: {self.transitioning_num}')
+
+    def transition_completed_callback(self, _):
+        self.transitioning_num -= 1
+        self.get_logger().info(f'Active transitions: {self.transitioning_num}')
 
     def rescue_active_callback(self, msg: Bool) -> None:
         """
@@ -165,15 +173,23 @@ class StateMachineNode(Node):
         """
         from lifecycle_msgs.msg import Transition
 
+        if self.transitioning_num > 0:
+            return
+
         if self.current_state == State.INIT:
-            # Activate motor control for all states
-            fan_msg = Int32()
-            fan_msg.data = 100
-            self.fan_pub.publish(fan_msg)
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_CONFIGURE
+            )
+            # self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
+
             self.current_state = State.IDLE
 
         elif self.current_state == State.IDLE:
             if not self.idle_toggle:
+                fan_msg = Int32()
+                fan_msg.data = 100
+                self.fan_pub.publish(fan_msg)
+
                 self.change_node_state(
                     self.line_follower_client, Transition.TRANSITION_ACTIVATE
                 )
@@ -181,6 +197,10 @@ class StateMachineNode(Node):
                 self.current_state = State.LINE_FOLLOWING
 
         elif self.idle_toggle:
+            fan_msg = Int32()
+            fan_msg.data = 0
+            self.fan_pub.publish(fan_msg)
+
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE
             )
@@ -206,9 +226,6 @@ class StateMachineNode(Node):
                 )
 
         elif self.current_state == State.STOP:
-            fan_msg = Int32()
-            fan_msg.data = 0
-            self.fan_pub.publish(fan_msg)
             # Deactivate all nodes
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE
