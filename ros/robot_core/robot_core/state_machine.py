@@ -90,12 +90,19 @@ class StateMachineNode(Node):
         self.line_follower_client = self.create_client(
             ChangeState, f'{self.line_follow_node}/change_state'
         )
+
+        while not self.line_follower_client.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for line follower node...')
+
         self.rescue_client = self.create_client(
             ChangeState, f'{self.rescue_node}/change_state'
         )
 
-        self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
-        self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
+        # while not self.rescue_client.wait_for_service(timeout_sec=1):
+        #     self.get_logger().info('Waiting for rescue node...')
+
+        # self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
+        # self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
 
         self.timer = self.create_timer(0.05, self.state_loop)
         self.transition_future = None
@@ -153,8 +160,8 @@ class StateMachineNode(Node):
 
     def clean_exit(self):
         """Disable voltage regulators on exit."""
-        self.en_3v3.off()
-        self.en_5v.off()
+        # self.en_3v3.off()
+        # self.en_5v.off()
 
     def state_loop(self):
         """
