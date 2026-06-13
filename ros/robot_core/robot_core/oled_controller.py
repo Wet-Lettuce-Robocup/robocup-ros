@@ -67,7 +67,7 @@ class OLEDController(Node):
             String, 'oled_status', self.status_callback, 10
         )
         self.error_sub = self.create_subscription(
-            Float32, 'line_error', self.error_callback, 10
+            Float32, 'line_follow/line_error', self.error_callback, 10
         )
         self.silver_sub = self.create_subscription(
             Int32, 'oled_silver', self.silver_callback, 10

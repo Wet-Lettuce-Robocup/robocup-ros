@@ -1,0 +1,124 @@
+```mermaid
+flowchart LR
+
+/ekf_filter_node[ /ekf_filter_node ]:::main
+/fan_controller[ /fan_controller ]:::main
+/front_camera/camera_node[ /front_camera/camera_node ]:::main
+/line_follow/navigation[ /line_follow/navigation ]:::main
+/oled_controller[ /oled_controller ]:::main
+/servo_lift[ /servo_lift ]:::main
+/transform_listener_impl_555586bbff30[ /transform_listener_impl_555586bbff30 ]:::main
+/state_machine[ /state_machine ]:::node
+/pwm2/pwm_controller[ /pwm2/pwm_controller ]:::node
+/line_follow/navigation[ /line_follow/navigation ]:::node
+/line_follow/pid_loop[ /line_follow/pid_loop ]:::node
+/i2c_controller[ /i2c_controller ]:::node
+/imu/data([ /imu/data<br>sensor_msgs/msg/Imu ]):::bugged
+/set_pose([ /set_pose<br>geometry_msgs/msg/PoseWithCovarianceStamped ]):::bugged
+/wheel/odom([ /wheel/odom<br>nav_msgs/msg/Odometry ]):::bugged
+/accel/filtered([ /accel/filtered<br>geometry_msgs/msg/AccelWithCovarianceStamped ]):::bugged
+/diagnostics([ /diagnostics<br>diagnostic_msgs/msg/DiagnosticArray ]):::bugged
+/odometry/filtered([ /odometry/filtered<br>nav_msgs/msg/Odometry ]):::bugged
+/fan/target_speed([ /fan/target_speed<br>std_msgs/msg/Int32 ]):::topic
+/fan/speed([ /fan/speed<br>std_msgs/msg/Int32 ]):::bugged
+/pwm2/duty_cycle([ /pwm2/duty_cycle<br>std_msgs/msg/Int32 ]):::topic
+/pwm2/enable([ /pwm2/enable<br>std_msgs/msg/Bool ]):::topic
+/pwm2/period([ /pwm2/period<br>std_msgs/msg/Int32 ]):::topic
+/front_camera/camera_node/camera_info([ /front_camera/camera_node/camera_info<br>sensor_msgs/msg/CameraInfo ]):::bugged
+/front_camera/camera_node/image_raw([ /front_camera/camera_node/image_raw<br>sensor_msgs/msg/Image ]):::topic
+/front_camera/camera_node/image_raw/compressed([ /front_camera/camera_node/image_raw/compressed<br>sensor_msgs/msg/CompressedImage ]):::bugged
+/line_follow/line_error([ /line_follow/line_error<br>std_msgs/msg/Float64 ]):::topic
+/line_error([ /line_error<br>std_msgs/msg/Float32 ]):::bugged
+/oled_black([ /oled_black<br>std_msgs/msg/Int32 ]):::bugged
+/oled_silver([ /oled_silver<br>std_msgs/msg/Int32 ]):::bugged
+/oled_status([ /oled_status<br>std_msgs/msg/String ]):::bugged
+/stm_temp([ /stm_temp<br>std_msgs/msg/Float32 ]):::topic
+/servo/lift([ /servo/lift<br>std_msgs/msg/Float32 ]):::bugged
+/ekf_filter_node/get_type_description[/ /ekf_filter_node/get_type_description<br>type_description_interfaces/srv/GetTypeDescription \]:::bugged
+/enable[/ /enable<br>std_srvs/srv/Empty \]:::bugged
+/reset[/ /reset<br>std_srvs/srv/Empty \]:::bugged
+/set_pose[/ /set_pose<br>robot_localization/srv/SetPose \]:::bugged
+/toggle[/ /toggle<br>robot_localization/srv/ToggleFilterProcessing \]:::bugged
+/fan_controller/get_type_description[/ /fan_controller/get_type_description<br>type_description_interfaces/srv/GetTypeDescription \]:::bugged
+/front_camera/camera_node/get_type_description[/ /front_camera/camera_node/get_type_description<br>type_description_interfaces/srv/GetTypeDescription \]:::bugged
+/front_camera/camera_node/set_camera_info[/ /front_camera/camera_node/set_camera_info<br>sensor_msgs/srv/SetCameraInfo \]:::bugged
+/line_follow/navigation/get_type_description[/ /line_follow/navigation/get_type_description<br>type_description_interfaces/srv/GetTypeDescription \]:::bugged
+/oled_controller/get_type_description[/ /oled_controller/get_type_description<br>type_description_interfaces/srv/GetTypeDescription \]:::bugged
+/servo_lift/get_type_description[/ /servo_lift/get_type_description<br>type_description_interfaces/srv/GetTypeDescription \]:::bugged
+/i2c_write[/ /i2c_write<br>robot_msgs/srv/I2CWrite \]:::service
+/transform_listener_impl_555586bbff30/get_type_description[/ /transform_listener_impl_555586bbff30/get_type_description<br>type_description_interfaces/srv/GetTypeDescription \]:::bugged
+
+/imu/data --> /ekf_filter_node
+/set_pose --> /ekf_filter_node
+/wheel/odom --> /ekf_filter_node
+/fan/target_speed --> /fan_controller
+/front_camera/camera_node/image_raw --> /line_follow/navigation
+/line_error --> /oled_controller
+/oled_black --> /oled_controller
+/oled_silver --> /oled_controller
+/oled_status --> /oled_controller
+/stm_temp --> /oled_controller
+/servo/lift --> /servo_lift
+/pwm2/duty_cycle --> /pwm2/pwm_controller
+/pwm2/enable --> /pwm2/pwm_controller
+/pwm2/period --> /pwm2/pwm_controller
+/front_camera/camera_node/image_raw --> /line_follow/navigation
+/line_follow/line_error --> /line_follow/pid_loop
+/ekf_filter_node --> /accel/filtered
+/ekf_filter_node --> /diagnostics
+/ekf_filter_node --> /odometry/filtered
+/fan_controller --> /fan/speed
+/fan_controller --> /pwm2/duty_cycle
+/fan_controller --> /pwm2/enable
+/fan_controller --> /pwm2/period
+/front_camera/camera_node --> /diagnostics
+/front_camera/camera_node --> /front_camera/camera_node/camera_info
+/front_camera/camera_node --> /front_camera/camera_node/image_raw
+/front_camera/camera_node --> /front_camera/camera_node/image_raw/compressed
+/line_follow/navigation --> /line_follow/line_error
+/state_machine --> /fan/target_speed
+/i2c_controller --> /stm_temp
+/ekf_filter_node/get_type_description o-.-o /ekf_filter_node
+/enable o-.-o /ekf_filter_node
+/reset o-.-o /ekf_filter_node
+/set_pose o-.-o /ekf_filter_node
+/toggle o-.-o /ekf_filter_node
+/fan_controller/get_type_description o-.-o /fan_controller
+/front_camera/camera_node/get_type_description o-.-o /front_camera/camera_node
+/front_camera/camera_node/set_camera_info o-.-o /front_camera/camera_node
+/line_follow/navigation/get_type_description o-.-o /line_follow/navigation
+/oled_controller/get_type_description o-.-o /oled_controller
+/servo_lift/get_type_description o-.-o /servo_lift
+/transform_listener_impl_555586bbff30/get_type_description o-.-o /transform_listener_impl_555586bbff30
+/i2c_write o-.-o /i2c_controller
+/servo_lift <-.-> /i2c_write
+
+
+subgraph keys[<b>Keys<b/>]
+subgraph nodes[<b><b/>]
+topicb((No connected)):::bugged
+main_node[main]:::main
+end
+subgraph connection[<b><b/>]
+node1[node1]:::node
+node2[node2]:::node
+node1 o-.-o|to server| service[/Service<br>service/Type\]:::service
+service <-.->|to client| node2
+node1 -->|publish| topic([Topic<br>topic/Type]):::topic
+topic -->|subscribe| node2
+node1 o==o|to server| action{{/Action<br>action/Type/}}:::action
+action <==>|to client| node2
+end
+end
+classDef node opacity:0.9,fill:#2A0,stroke:#391,stroke-width:4px,color:#fff
+classDef action opacity:0.9,fill:#66A,stroke:#225,stroke-width:2px,color:#fff
+classDef service opacity:0.9,fill:#3B8062,stroke:#3B6062,stroke-width:2px,color:#fff
+classDef topic opacity:0.9,fill:#852,stroke:#CCC,stroke-width:2px,color:#fff
+classDef main opacity:0.9,fill:#059,stroke:#09F,stroke-width:4px,color:#fff
+classDef bugged opacity:0.9,fill:#933,stroke:#800,stroke-width:2px,color:#fff
+style keys opacity:0.15,fill:#FFF
+style nodes opacity:0.15,fill:#FFF
+style connection opacity:0.15,fill:#FFF
+
+```
+

@@ -86,6 +86,9 @@ class StateMachineNode(Node):
         )
         self.fan_pub = self.create_publisher(Int32, '/fan/target_speed', 10)
 
+        self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
+        self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
+
         # Lifecycle service clients
         self.line_follower_client = self.create_client(
             ChangeState, f'{self.line_follow_node}/change_state'
@@ -100,9 +103,6 @@ class StateMachineNode(Node):
 
         # while not self.rescue_client.wait_for_service(timeout_sec=1):
         #     self.get_logger().info('Waiting for rescue node...')
-
-        # self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
-        # self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
 
         self.timer = self.create_timer(0.05, self.state_loop)
         self.transition_future = None
@@ -160,8 +160,8 @@ class StateMachineNode(Node):
 
     def clean_exit(self):
         """Disable voltage regulators on exit."""
-        # self.en_3v3.off()
-        # self.en_5v.off()
+        self.en_3v3.off()
+        self.en_5v.off()
 
     def state_loop(self):
         """

@@ -46,7 +46,7 @@ idle_button:
     ros__parameters:
       camera: 0
       role: 'viewfinder'
-      format: 'XRGB8888'
+      format: 'BGR888'
       width: 1536
       height: 864
       sensor_mode: '2304:1296'
@@ -57,7 +57,7 @@ idle_button:
     ros__parameters:
       camera: 1
       role: 'viewfinder'
-      format: 'XRGB8888'
+      format: 'BGR888'
       width: 1536
       height: 864
       sensor_mode: '2304:1296'
