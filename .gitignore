@@ -1,0 +1,6 @@
+cross_reference/
+docs_build/
+docs_output/
+log/
+build/
+install/

@@ -1,0 +1,95 @@
+name: Build and Deploy ROS Documentation
+
+on:
+  push:
+    branches: ['master']
+  pull_request: # Optional: build on PRs for preview (no deploy)
+    branches: ['master']
+  workflow_dispatch: # Manual trigger except it doesn't work
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ros-distro: [kilted]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive # To include submodules
+
+      - name: Setup ROS 2
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ matrix.ros-distro }}
+
+      - name: Install rosdoc2 and dependencies
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+          sudo apt update
+          sudo apt install -y python3-pip python3-rosdep doxygen graphviz
+          rosdep update
+          # Install rosdoc2 (prefer latest from git or PyPI)
+          python3 -m pip install --upgrade pip
+          python3 -m pip install 'git+https://github.com/ros-infrastructure/rosdoc2@main' || python3 -m pip install rosdoc2
+
+      - name: Install package dependencies
+        shell: bash
+        run: |
+          sudo apt install -y python3-serial python3-smbus2 python3-lgpio python3-gpiozero  python3-luma.oled python3-pil
+          python3 -m pip install rpi5-ws2812
+
+      # - name: Install package dependencies (if needed)
+      #   shell: bash
+      #   run: |
+      #     source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+      #     rosdep install --from-paths . --ignore-src -y -r || echo "No rosdeps or already satisfied"
+
+      - name: Build documentation with rosdoc2
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+
+          # Create output directory
+          mkdir -p docs_output
+
+          # Build docs for your package(s). Adjust paths!
+          # For a single package at repo root:
+          # rosdoc2 build --package-path ./ros/robot_core --output-directory docs_output
+
+          # For multiple packages in src/ (colcon-style workspace):
+          for pkg in ./ros/*/; do
+            pkg_name=$(basename "$pkg")
+
+            # 2. Skip the specific package you want to exclude
+            if [ "$pkg_name" = "bno08x_ros2_driver" ]; then
+              continue
+            fi
+
+            if [ -f "${pkg}package.xml" ]; then
+              rosdoc2 build --package-path "$pkg" --output-directory docs_output
+            fi
+          done
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' # Only on main push
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs_output' # Adjust to where index.html lives (e.g., docs_output/<package_name>)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
