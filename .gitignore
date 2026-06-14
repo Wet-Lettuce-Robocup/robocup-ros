@@ -4,3 +4,5 @@ docs_output/
 log/
 build/
 install/
+.vscode/
+videos/

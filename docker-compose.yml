@@ -7,6 +7,8 @@ services:
       - /dev:/dev
       - /sys/class/pwm:/sys/class/pwm
       - /run/udev/:/run/udev/
+      - ./node_connections:/node_connections
+      - ./videos:/videos
     group_add:
       - video
     environment:
