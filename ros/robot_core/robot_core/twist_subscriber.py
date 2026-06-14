@@ -119,7 +119,7 @@ class TwistSubscriber(Node):
         if angular_z < -60:
             angular_z = -60
 
-        self.get_logger().info(f'{linear_x}, {angular_z}')
+        # self.get_logger().info(f'{linear_x}, {angular_z}')
 
         request: I2CWrite.Request = I2CWrite.Request()
 

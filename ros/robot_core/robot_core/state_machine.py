@@ -211,7 +211,7 @@ class StateMachineNode(Node):
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE
             )
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            # self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
