@@ -1,19 +1,3 @@
-# Robot Core
-# Copyright (C) 2026  Dry Lettuce
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import math
 
 import rclpy
@@ -44,9 +28,15 @@ class ClawServices(Node):
         )
 
         # Publish to servo controllers
-        self.grab_pub = self.create_publisher(Float32, '/servo/grab', 10)
-        self.lift_pub = self.create_publisher(Float32, '/servo/lift', 10)
-        self.gate_pub = self.create_publisher(Float32, '/servo/tray_release', 10)
+        self.grab_pub = self.create_publisher(
+            Float32, '/servo/grab', 10
+        )
+        self.lift_pub = self.create_publisher(
+            Float32, '/servo/lift', 10
+        )
+        self.gate_pub = self.create_publisher(
+            Float32, '/servo/tray_release', 10
+        )
 
     def claw_command_callback(self, msg: String) -> None:
         if msg.data == 'lift_up':

@@ -79,10 +79,10 @@ FROM base AS runtime
 
 # Python dependencies
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
-RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
+RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 vl53l5cx-ctypes
 COPY docker_entrypoint.sh /
 
-RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \
+RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil
