@@ -45,14 +45,22 @@ COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=libcamera-builder /usr/local /usr/local
 RUN ldconfig
 
-RUN apt-get update && apt-get install -y libboost-python-dev
+RUN apt-get update && apt-get install -y libboost-python-dev ccache
+ENV PATH="/usr/lib/ccache:$PATH"
 ENV OpenCV_DIR=/usr/local/lib/cmake/opencv4
 
 WORKDIR /underlay_ws
-RUN mkdir -p src \
+RUN --mount=type=cache,target=/var/lib/apt/lists \
+  --mount=type=cache,target=/var/cache/apt/archives \
+  --mount=type=cache,target=/underlay_ws/build \
+  --mount=type=cache,target=/underlay_ws/ccache \
+  export CCACHE_DIR=/underlay_ws/ccache && \
+  mkdir -p src \
   && git clone --depth 1 https://github.com/christianrauch/camera_ros.git src/camera_ros \
   && git clone --depth 1 --branch rolling https://github.com/ros-perception/vision_opencv.git \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
+  && apt-get update \
+  && rosdep update \
   && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev cv_bridge' \
   && colcon build --packages-select camera_ros cv_bridge --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
 
@@ -65,13 +73,19 @@ RUN mkdir -p src
 COPY ros/ ./src/
 
 # Install dependencies
-RUN apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
   && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
   && rm -rf /var/lib/apt/lists/*"
 
 # Build overlay on top of underlay
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
+RUN --mount=type=cache,target=/overlay_ws/build \
+  --mount=type=cache,target=/overlay_ws/ccache \
+  export CCACHE_DIR=/overlay_ws/ccache && \
+  export PATH="/usr/lib/ccache:$PATH" && \
+  /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
 
 # ==================== RUNTIME STAGE ====================
