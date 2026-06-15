@@ -96,7 +96,6 @@ class OdomPublisher(Node):
 
         self.publisher_ = self.create_publisher(Odometry, 'odom', 10)
         self.pub_timer = self.create_timer(0.1, self.publish_odom)  # 10 Hz
-        self.enc_timer = self.create_timer(0.1, self.request_enc)
         self.start_time = self.get_clock().now()
 
         self.wheel_dist = self.get_parameter('wheel_dist').value
@@ -104,6 +103,8 @@ class OdomPublisher(Node):
         self.wheel_radius = self.get_parameter('wheel_radius').value
 
         self.wheel_circumefrence = math.pi * (self.wheel_radius**2)
+
+        self.encoders_set: bool = False
 
     def request_vel(self) -> None:
         """Request velocity data from the STM32 over I2C."""
@@ -173,12 +174,21 @@ class OdomPublisher(Node):
 
             enc_msg = response.data
 
-            enc_fl = int.from_bytes(enc_msg[0:4], signed=True)
-            enc_fr = int.from_bytes(enc_msg[4:8], signed=True)
-            enc_bl = int.from_bytes(enc_msg[8:12], signed=True)
-            enc_br = int.from_bytes(enc_msg[12:16], signed=True)
+            enc_fl = int.from_bytes(enc_msg[2:4], signed=True)
+            enc_fr = int.from_bytes(enc_msg[6:8], signed=True)
+            enc_bl = int.from_bytes(enc_msg[10:12], signed=True)
+            enc_br = int.from_bytes(enc_msg[14:16], signed=True)
 
             self.encoders = enc_fl, enc_fr, enc_bl, enc_br
+
+            if not self.encoders_set:
+                (
+                    self.last_enc_fl,
+                    self.last_enc_fr,
+                    self.last_enc_bl,
+                    self.last_enc_br,
+                ) = self.encoders
+                self.encoders_set = True
 
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
@@ -192,8 +202,13 @@ class OdomPublisher(Node):
         Updates current position and angle, and publishes position and velocity to
         odometry topic.
         """
+        self.request_enc()
+
         current_time = self.get_clock().now()
         dt = 0.1
+
+        if not self.encoders_set:
+            return
 
         # vel_data = self.get_vel()
 

@@ -65,6 +65,7 @@ class TwistSubscriber(Node):
         self.declare_parameter('counts_per_revolution', 480.0)
         self.declare_parameter('wheel_radius', 0.04)
         self.declare_parameter('max_counts_per_second', 900.0)
+        self.declare_parameter('stop_delay', 0.2)
 
         self.subscription = self.create_subscription(
             Twist, '/cmd_vel', self.twist_callback, 10
@@ -80,8 +81,10 @@ class TwistSubscriber(Node):
         self.counts_per_revolution = self.get_parameter('counts_per_revolution').value
         self.wheel_radius = self.get_parameter('wheel_radius').value
         self.max_counts_per_second = self.get_parameter('max_counts_per_second').value
+        self.stop_delay = self.get_parameter('stop_delay').value
 
         self.speed_mult = self.counts_per_revolution / (self.wheel_radius * 2 * math.pi)
+        self.last_stopped = self.get_clock().now()
 
         self.get_logger().info('Twist subscriber node started!')
 
@@ -96,6 +99,8 @@ class TwistSubscriber(Node):
         self.future = self.cli.call_async(request)
         self.future.add_done_callback(self.i2c_callback)
 
+        self.last_stopped = self.get_clock().now()
+
     def twist_callback(self, msg: Twist) -> None:
         """
         Handle velocity commands.
@@ -107,6 +112,11 @@ class TwistSubscriber(Node):
         :param msg: Twist velocity command.
         :type msg: Twist
         """
+        current_time = self.get_clock().now()
+
+        if (current_time - self.last_stopped).nanoseconds < self.stop_delay * 1e9:
+            return
+
         linear_x = int(msg.linear.x * self.speed_mult)
         angular_z = int(msg.angular.z * self.speed_mult)
 

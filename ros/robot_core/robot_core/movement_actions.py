@@ -187,11 +187,15 @@ class MovementNode(Node):
                 result.success = True
                 break
 
-            linear_vel = max(
-                min(request.distance - dist_traveled, request.vel), -request.vel
+            linear_vel = (
+                math.copysign(request.vel, request.distance - dist_traveled)
+                if abs(request.distance - dist_traveled) > 0.03
+                else 0.0
             )
-            angular_vel = max(
-                min(request.angle - angle_traveled, request.vel), -request.vel
+            angular_vel = (
+                math.copysign(request.vel, request.angle - angle_traveled)
+                if abs(request.angle - angle_traveled) > 0.08
+                else 0.0
             )
 
             # Send velocity command

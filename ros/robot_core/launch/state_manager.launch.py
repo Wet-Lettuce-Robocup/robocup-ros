@@ -225,7 +225,7 @@ def generate_launch_description():
             fan_controller,
             front_camera,
             down_camera,
-            ekf_node,
+            # ekf_node,
             line_follow_launch,
             state_machine,
         ]
