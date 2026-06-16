@@ -81,7 +81,7 @@ RUN --mount=type=cache,target=/var/lib/apt/lists \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
   && apt-get update \
   && rosdep update \
-  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev cv_bridge vision-msgs' \
+  && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev cv_bridge' \
   && colcon build --packages-select camera_ros cv_bridge --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
 
 # ==================== ROS2 ROBOT PACKAGES ====================
@@ -97,7 +97,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
   apt-get update \
   && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
-  && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev vision-msgs' \
+  && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
   && rm -rf /var/lib/apt/lists/*"
 
 # Build overlay on top of underlay
@@ -116,7 +116,7 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
 COPY docker_entrypoint.sh /
 
-RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \
+RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager ros-$ROS_DISTRO-vision-msgs \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
