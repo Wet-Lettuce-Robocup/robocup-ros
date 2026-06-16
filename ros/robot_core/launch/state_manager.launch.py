@@ -17,16 +17,15 @@
 import os
 
 from ament_index_python.packages import get_package_share_directory
-from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
+from launch import LaunchDescription
+
 
 def generate_launch_description():
-    config = os.path.join(
-        get_package_share_directory('robot_core'), 'config', 'params.yaml'
-    )
+    config = os.path.join(get_package_share_directory('robot_core'), 'config', 'params.yaml')
 
     oled_controller = Node(
         package='robot_core',
@@ -198,27 +197,25 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    return LaunchDescription(
-        [
-            oled_controller,
-            static_transform,
-            i2c_controller,
-            bno08x_driver,
-            servo_grab,
-            servo_lift,
-            servo_tray_release,
-            odom_publisher,
-            twist_subscriber,
-            pwm_0_controller,
-            pwm_1_controller,
-            pwm_2_controller,
-            status_led,
-            idle_button,
-            fan_controller,
-            front_camera,
-            down_camera,
-            ekf_node,
-            line_follow_launch,
-            state_machine,
-        ]
-    )
+    return LaunchDescription([
+        oled_controller,
+        static_transform,
+        i2c_controller,
+        bno08x_driver,
+        servo_grab,
+        servo_lift,
+        servo_tray_release,
+        odom_publisher,
+        twist_subscriber,
+        pwm_0_controller,
+        pwm_1_controller,
+        pwm_2_controller,
+        status_led,
+        idle_button,
+        fan_controller,
+        front_camera,
+        down_camera,
+        ekf_node,
+        line_follow_launch,
+        state_machine,
+    ])

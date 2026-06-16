@@ -123,7 +123,10 @@ RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-plugins-ugly \
-  gstreamer1.0-libav
+  gstreamer1.0-libav \
+  libboost-python1.83.0 \
+  python3-dev && \
+  ldconfig
 
 COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local
