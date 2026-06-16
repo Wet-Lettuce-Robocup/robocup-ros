@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 RUN git config --global http.sslVerify false
 
 # ========== HAILORT STAGE ==========
-FROM base as hailo-base
+FROM base AS hailo-base
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
