@@ -1,15 +1,34 @@
 # ==================== BASE / COMMON ====================
 FROM ros:kilted AS base
 
-RUN apt-get update && apt-get install -y python3-pip git python3-jinja2 \
+RUN apt-get update && apt-get install -y \
+  python3-pip git python3-jinja2 \
   libboost-dev \
   libgnutls28-dev openssl libtiff-dev pybind11-dev \
   meson cmake \
   python3-yaml python3-ply \
   libglib2.0-dev libgstreamer-plugins-base1.0-dev \
-  python3-colcon-meson
+  python3-colcon-meson \
+  build-essential \
+  && rm -rf /var/lib/apt/lists/*
 
 RUN git config --global http.sslVerify false
+
+# ========== HAILORT STAGE ==========
+FROM base as hailo-base
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+COPY hailo_dependencies/hailort_5.3.0_arm64.deb /tmp/
+COPY hailo_dependencies/hailort-5.3.0-cp312-cp312-linux_aarch64.whl /tmp/
+
+RUN apt-get update && \
+  apt-get install -y \
+  /tmp/hailort_5.3.0_arm64.deb && \
+  pip3 install --no-cache-dir /tmp/hailort-*.whl && \
+  python3 -c "import hailo_platform" && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -f /tmp/*
 
 # ==================== LIBCAMERA STAGE ====================
 FROM base AS libcamera-builder
@@ -39,7 +58,7 @@ RUN cmake .. \
   && make install
 
 # ==================== ROS2 EXTERNAL PACKAGES ====================
-FROM base AS external-ros-builder
+FROM hailo-base AS external-ros-builder
 
 COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=libcamera-builder /usr/local /usr/local
@@ -89,7 +108,7 @@ RUN --mount=type=cache,target=/overlay_ws/build \
   colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
 
 # ==================== RUNTIME STAGE ====================
-FROM base AS runtime
+FROM hailo-base AS runtime
 
 # Python dependencies
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
