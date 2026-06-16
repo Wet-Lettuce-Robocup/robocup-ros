@@ -9,6 +9,11 @@ services:
       - /run/udev/:/run/udev/
       - ./node_connections:/node_connections
       - ./videos:/videos
+      - /lib/firmware:/lib/firmware
+      - /lib/udev/rules.d:/lib/udev/rules.d
+      - /lib/modules:/lib/modules
+    devices:
+      - /dev/h1x-0:/dev/h1x-0
     group_add:
       - video
     environment:

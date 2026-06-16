@@ -24,6 +24,7 @@ COPY hailo_dependencies/hailort-5.3.0-cp312-cp312-linux_aarch64.whl /tmp/
 
 RUN apt-get update && \
   apt-get install -y \
+  libusb-1.0-0 \
   /tmp/hailort_5.3.0_arm64.deb && \
   pip3 install --no-cache-dir /tmp/hailort-*.whl && \
   python3 -c "import hailo_platform" && \
