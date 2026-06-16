@@ -1,0 +1,11 @@
+# Goal
+float32 distance
+float32 angle
+float32 vel
+---
+# Result
+bool success
+---
+# Feedback
+float32 distance_travelled
+float32 angle_turned
