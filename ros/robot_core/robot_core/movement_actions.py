@@ -156,7 +156,7 @@ class MovementNode(Node):
         feedback = Move.Feedback()
         result = Move.Result(success=False)
 
-        rate = self.create_rate(20)
+        rate = self.create_rate(8)
 
         while rclpy.ok():
             if not goal_handle.is_active:
@@ -177,10 +177,14 @@ class MovementNode(Node):
             )
             goal_handle.publish_feedback(feedback)
 
+            dist_diff = request.distance - math.copysign(
+                dist_traveled, request.distance
+            )
+            angle_diff = request.angle - angle_traveled
+
             # Check if we reached the target (with tolerance)
-            if (
-                abs(dist_traveled - request.distance) < 0.03
-                and abs(angle_traveled - request.angle) < 0.08
+            if abs(dist_diff) < 0.03 and (
+                abs(angle_diff) < 0.08 or abs(request.angle) < 0.08
             ):  # tolerances in m and rad
                 self.get_logger().info('Goal reached successfully!')
                 goal_handle.succeed()
@@ -188,13 +192,11 @@ class MovementNode(Node):
                 break
 
             linear_vel = (
-                math.copysign(request.vel, request.distance - dist_traveled)
-                if abs(request.distance - dist_traveled) > 0.03
-                else 0.0
+                math.copysign(request.vel, dist_diff) if abs(dist_diff) > 0.03 else 0.0
             )
             angular_vel = (
-                math.copysign(request.vel, request.angle - angle_traveled)
-                if abs(request.angle - angle_traveled) > 0.08
+                math.copysign(request.vel, angle_diff)
+                if abs(angle_diff) > 0.08 and abs(request.angle) > 0.08
                 else 0.0
             )
 
@@ -205,11 +207,9 @@ class MovementNode(Node):
                 if abs(linear_vel) > 0.03
                 else 0.0
             )
-            twist.angular.z = angular_vel if abs(angular_vel) > 0.1 else 0.0
+            twist.angular.z = angular_vel
 
-            self.get_logger().info(
-                f'{request.distance - dist_traveled}, {request.angle - angle_traveled}'
-            )
+            self.get_logger().info(f'{dist_diff}, {angle_diff}')
 
             self.twist_pub.publish(twist)
             rate.sleep()

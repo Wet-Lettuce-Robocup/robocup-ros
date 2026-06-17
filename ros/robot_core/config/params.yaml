@@ -1,6 +1,7 @@
 state_machine:
   ros__parameters:
     line_follow_node: /line_follow/core_loop
+    rescue_node: /rescue_node
 
 servo_grab:
   ros__parameters:
@@ -91,7 +92,7 @@ twist_subscriber:
     counts_per_revolution: 1000.0
     wheel_radius: 0.04
     max_counts_per_second: 1800.0
-    stop_delay: 0.2
+    stop_delay: 1.5
 
 odom_publisher:
   ros__parameters:
