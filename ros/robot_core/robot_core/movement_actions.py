@@ -23,7 +23,8 @@ from rclpy.action.server import ActionServer
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
-from robot_msgs.action import Move
+from rclpy.time import Time
+from robot_msgs.action import Move, MoveTime
 
 
 class MovementNode(Node):
@@ -116,6 +117,13 @@ class MovementNode(Node):
             self.execute_callback,
             callback_group=self.callback_group,
         )
+        self.action_server = ActionServer(
+            self,
+            MoveTime,
+            'move_time',
+            self.time_execute_callback,
+            callback_group=self.callback_group,
+        )
 
     def odom_callback(self, msg: Odometry) -> None:
         """Update current robot pose from odometry."""
@@ -156,7 +164,7 @@ class MovementNode(Node):
         feedback = Move.Feedback()
         result = Move.Result(success=False)
 
-        rate = self.create_rate(8)
+        rate = self.create_rate(20)
 
         while rclpy.ok():
             if not goal_handle.is_active:
@@ -231,6 +239,60 @@ class MovementNode(Node):
         angle = (angle + math.pi) % (2 * math.pi) - math.pi
 
         return distance, angle
+
+    async def time_execute_callback(self, goal_handle) -> MoveTime.Result:
+        """
+        Execute time movement command.
+
+        Moves the robot at the specified linear and angular velocity for the
+        specified amount of time. Does not use any odometry data.
+
+        :param goal_handle: Time movement action goal.
+        :returns: Result of time movement including success.
+        :rtype: MoveTime.Result
+        """
+        self.get_logger().info('Executing movement action...')
+
+        request = goal_handle.request
+
+        feedback = MoveTime.Feedback()
+        result = MoveTime.Result(success=False)
+
+        start_time: Time = self.get_clock().now()
+
+        rate = self.create_rate(20)
+
+        while rclpy.ok():
+            if not goal_handle.is_active:
+                self.get_logger().info('Goal was cancelled')
+                self.stop_robot()
+                return MoveTime.Result(success=False)
+
+            # Calculate progress
+            current_time: Time = self.get_clock().now()
+            elapsed_time: float = (current_time - start_time).nanoseconds * 1e9
+
+            # Publish feedback
+            feedback.time_elapsed = elapsed_time
+            goal_handle.publish_feedback(feedback)
+
+            time_left: float = request.time - elapsed_time
+
+            if time_left <= 0:
+                self.get_logger().info('Goal reached successfully!')
+                goal_handle.succeed()
+                result.success = True
+                break
+
+            twist = Twist()
+            twist.linear.x = request.vel
+            twist.angular.z = request.angular_vel
+
+            self.twist_pub.publish(twist)
+            rate.sleep()
+
+        self.stop_robot()
+        return result
 
     def stop_robot(self) -> None:
         """Stop the robot immediately."""

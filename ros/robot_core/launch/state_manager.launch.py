@@ -176,13 +176,13 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    ekf_node = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
-        output='screen',
-        parameters=[config],
-    )
+    # ekf_node = Node(
+    #     package='robot_localization',
+    #     executable='ekf_node',
+    #     name='ekf_filter_node',
+    #     output='screen',
+    #     parameters=[config],
+    # )
     movement_action_node = Node(
         package='robot_core',
         executable='movement_actions',
