@@ -26,8 +26,12 @@ except ImportError:
     board = MagicMock()
     busio = MagicMock()
 
+import threading
+
 from gpiozero import OutputDevice
 import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
@@ -180,8 +184,18 @@ class I2CBusController(Node):
             self.get_logger().fatal(f'Failed to initialize I2C device! {e}')
             return
 
-        self.read_srv = self.create_service(I2CRead, 'i2c_read', self.handle_read)
-        self.write_srv = self.create_service(I2CWrite, 'i2c_write', self.handle_write)
+        self.i2c_lock = threading.Lock()
+
+        self.cb_group_1 = ReentrantCallbackGroup()
+        self.cb_group_2 = ReentrantCallbackGroup()
+        self.cb_group_3 = ReentrantCallbackGroup()
+
+        self.read_srv = self.create_service(
+            I2CRead, 'i2c_read', self.handle_read, callback_group=self.cb_group_1
+        )
+        self.write_srv = self.create_service(
+            I2CWrite, 'i2c_write', self.handle_write, callback_group=self.cb_group_2
+        )
 
         self.claw_tof_pub = self.create_publisher(Int32, 'tof/claw', 10)
         self.right_tof_pub = self.create_publisher(Int32, 'tof/right', 10)
@@ -203,7 +217,9 @@ class I2CBusController(Node):
 
         self.init_tof()
 
-        self.timer = self.create_timer(0.1, self.timer_callback)
+        self.timer = self.create_timer(
+            0.1, self.timer_callback, callback_group=self.cb_group_3
+        )
 
     def init_tof(self) -> None:
         """
@@ -263,19 +279,20 @@ class I2CBusController(Node):
         cmd = request.register_address
         data_len = request.length
 
-        try:
-            data = self.bus.read_i2c_block_data(addr, cmd, data_len)
+        with self.i2c_lock:
+            try:
+                data = self.bus.read_i2c_block_data(addr, cmd, data_len)
 
-            response.success = True
-            response.message = ''
-            response.data = data
+                response.success = True
+                response.message = ''
+                response.data = data
 
-        except IOError as e:
-            response.success = False
-            response.message = e
-            response.data = []
+            except IOError as e:
+                response.success = False
+                response.message = e
+                response.data = []
 
-        return response
+            return response
 
     def handle_write(
         self, request: I2CWrite.Request, response: I2CWrite.Response
@@ -291,41 +308,46 @@ class I2CBusController(Node):
         cmd = request.register_address
         data = request.data
 
-        try:
-            self.bus.write_i2c_block_data(addr, cmd, data)
+        with self.i2c_lock:
+            try:
+                self.bus.write_i2c_block_data(addr, cmd, data)
 
-            response.success = True
-            response.message = ''
+                response.success = True
+                response.message = ''
 
-        except IOError as e:
-            response.success = False
-            response.message = e
+            except IOError as e:
+                response.success = False
+                response.message = e
 
-        return response
+            return response
 
     def read_ultrasonic(self) -> int | None:
         """Attempt to read ultrasonic sensor data from STM32."""
-        try:
-            msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.ULTRASONIC_CMD, 4)
+        with self.i2c_lock:
+            try:
+                msg = self.bus.read_i2c_block_data(
+                    self.STM_ADDR, self.ULTRASONIC_CMD, 4
+                )
 
-            dist: int = int.from_bytes(msg)
+                dist: int = int.from_bytes(msg)
 
-            return dist
+                return dist
 
-        except IOError as e:
-            self.get_logger().error(f'I2C read failed! {e}')
+            except IOError as e:
+                self.get_logger().error(f'I2C read failed! {e}')
 
     def read_temp(self) -> float | None:
         """Attempt to read temperature data from STM32."""
-        try:
-            msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.TEMP_CMD, 4)
+        with self.i2c_lock:
+            try:
+                msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.TEMP_CMD, 4)
 
-            dist: float = int.from_bytes(msg) / 100
+                dist: float = int.from_bytes(msg) / 100
 
-            return dist
+                return dist
 
-        except IOError as e:
-            self.get_logger().error(f'I2C read failed! {e}')
+            except IOError as e:
+                self.get_logger().error(f'I2C read failed! {e}')
 
     def publish_tof(self) -> None:
         """
@@ -407,9 +429,16 @@ class I2CBusController(Node):
 def main(args=None) -> None:
     rclpy.init(args=args)
     node = I2CBusController()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+
+    try:
+        executor = MultiThreadedExecutor()
+
+        rclpy.spin(node, executor=executor)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
