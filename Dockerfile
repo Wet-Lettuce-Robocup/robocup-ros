@@ -120,6 +120,7 @@ RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
+  ffmpeg \
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-plugins-ugly \
