@@ -1,6 +1,8 @@
 # ==================== BASE / COMMON ====================
 FROM ros:kilted AS base
 
+LABEL type = "base"
+
 RUN apt-get update && apt-get install -y \
   python3-pip git python3-jinja2 \
   libboost-dev \
@@ -16,6 +18,8 @@ RUN git config --global http.sslVerify false
 
 # ========== HAILORT STAGE ==========
 FROM base AS hailo-base
+
+LABEL type = "hailo-base"
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
@@ -33,6 +37,9 @@ RUN apt-get update && \
 
 # ==================== LIBCAMERA STAGE ====================
 FROM base AS libcamera-builder
+
+LABEL type = "libcamera-builder"
+
 WORKDIR /build/libcamera
 
 RUN git clone --depth 1 https://github.com/raspberrypi/libcamera.git . \
@@ -41,6 +48,9 @@ RUN git clone --depth 1 https://github.com/raspberrypi/libcamera.git . \
 
 # ==================== OPENCV STAGE ====================
 FROM base AS opencv-builder
+
+LABEL type = "opencv-builder"
+
 WORKDIR /build/opencv
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -60,6 +70,8 @@ RUN cmake .. \
 
 # ==================== ROS2 EXTERNAL PACKAGES ====================
 FROM hailo-base AS external-ros-builder
+
+LABEL type = "external-ros-builder"
 
 COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=libcamera-builder /usr/local /usr/local
@@ -87,6 +99,8 @@ RUN --mount=type=cache,target=/var/lib/apt/lists \
 # ==================== ROS2 ROBOT PACKAGES ====================
 FROM external-ros-builder AS robot-ros-builder
 
+LABEL type = "robot-ros-builder"
+
 WORKDIR /overlay_ws
 RUN mkdir -p src
 
@@ -110,6 +124,8 @@ RUN --mount=type=cache,target=/overlay_ws/build \
 
 # ==================== RUNTIME STAGE ====================
 FROM hailo-base AS runtime
+
+LABEL type = "runtime"
 
 # Python dependencies
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
