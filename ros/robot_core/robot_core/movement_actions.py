@@ -119,7 +119,7 @@ class MovementNode(Node):
             Int8, 'robot_state', self.state_callback, 10
         )
 
-        self.write_cli = self.create_client(I2CWrite, 'i2c_read')
+        self.write_cli = self.create_client(I2CWrite, 'i2c_write')
         self.move_time_future: Future[I2CWrite.Response] | None = None
 
         self.robot_state: int = 0
@@ -282,10 +282,10 @@ class MovementNode(Node):
             angular_vel_byte >> 24 & 0xFF,
             angular_vel_byte >> 16 & 0xFF,
             angular_vel_byte >> 8 & 0xFF,
-            angular_vel_byte >> 24 & 0xFF,
+            angular_vel_byte & 0xFF,
+            time_byte >> 24 & 0xFF,
             time_byte >> 16 & 0xFF,
             time_byte >> 8 & 0xFF,
-            time_byte & 0xFF,
             time_byte & 0xFF,
         ]
 
@@ -345,7 +345,7 @@ class MovementNode(Node):
 
             time_left: float = request.time - elapsed_time
 
-            if time_left <= 0 and self.robot_state == self.MOVING_TIME_STATE:
+            if time_left <= 0 and self.robot_state != self.MOVING_TIME_STATE:
                 self.get_logger().info('Goal reached successfully!')
                 goal_handle.succeed()
                 result.success = True

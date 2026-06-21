@@ -92,7 +92,7 @@ twist_subscriber:
     counts_per_revolution: 1000.0
     wheel_radius: 0.04
     max_counts_per_second: 1800.0
-    stop_delay: 25.0
+    stop_delay: 0.0
 
 odom_publisher:
   ros__parameters:
