@@ -48,19 +48,19 @@ class MovementNode(Node):
         import rclpy
         from rclpy.node import Node
         from rclpy.action import ActionClient
-        from robot_msgs.action import Move
+        from robot_msgs.action import MoveTime
 
         class ActionClient(Node):
             def __init__(self):
                 super().__init__('my_action_client')
                 # Initialize the client
-                self._action_client = ActionClient(self, Move, 'move')
+                self._action_client = ActionClient(self, MoveTime, 'move_time')
 
             def send_goal(self, order):
-                goal_msg = Move.Goal()
-                goal_msg.distance = 1
-                goal_msg.angle = math.pi / 2
-                goal_msg.vel = 0.1
+                goal_msg = MoveTime.Goal()
+                goal_msg.vel = 100.0
+                goal_msg.linear_vel = 0.0
+                goal_msg.time = 1.0
 
                 # Wait for the server to spin up
                 self._action_client.wait_for_server()
@@ -89,8 +89,7 @@ class MovementNode(Node):
 
             def feedback_callback(self, feedback_msg):
                 feedback = feedback_msg.feedback
-                self.get_logger().info(f'Current distance: {feedback.distance_travelled},
-                                         Current angle: {feedback.angle_turned}')
+                self.get_logger().info(f'Current time: {feedback.time_elapsed}')
 
 
     :ivar wheel_dist: Distance between wheels on each side.
@@ -157,6 +156,7 @@ class MovementNode(Node):
         self.current_pose = (x, y, yaw)
 
     def state_callback(self, msg: Int8):
+        """Detect the current state of the robot."""
         self.robot_state = msg.data
 
     async def execute_callback(self, goal_handle) -> Move.Result:
@@ -262,6 +262,16 @@ class MovementNode(Node):
         return distance, angle
 
     def send_time_command(self, vel: float, angular_vel: float, time: float):
+        """
+        Write linear and angular velocity, and time to stm32 move time command.
+
+        :param vel: Target velocity as duty cycle for motor PWM timers.
+        :type vel: float
+        :param angular_vel: Target angular velocity as duty cycle for motor PWM timers.
+        :type angular_vel: float
+        :param time: Time in seconds to move for.
+        :type time: float
+        """
         cmd: I2CWrite.Request = I2CWrite.Request()
         cmd.device_address = self.STM_ADDR
         cmd.register_address = self.DRIVE_TIME_CMD
@@ -293,6 +303,7 @@ class MovementNode(Node):
         self.move_time_future.add_done_callback(self.move_time_callback)
 
     def move_time_callback(self, future):
+        """Check if I2C write command succeeded."""
         try:
             response: I2CWrite.Response | None = future.result()
 
