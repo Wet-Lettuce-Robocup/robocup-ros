@@ -188,7 +188,7 @@ class OLEDController(Node):
         if self.current_page == 0:
             self.update_display()
 
-    def error_callback(self, msg: Float32):
+    def error_callback(self, msg: Float64):
         self.error_value = int(msg.data)
         if self.current_page == 0:
             self.update_display()
