@@ -337,7 +337,7 @@ class MovementNode(Node):
 
             # Calculate progress
             current_time: Time = self.get_clock().now()
-            elapsed_time: float = (current_time - start_time).nanoseconds * 1e9
+            elapsed_time: float = (current_time - start_time).nanoseconds * 1e-9
 
             # Publish feedback
             feedback.time_elapsed = elapsed_time
