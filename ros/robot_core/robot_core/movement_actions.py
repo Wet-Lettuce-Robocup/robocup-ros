@@ -23,8 +23,11 @@ from rclpy.action.server import ActionServer
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
+from rclpy.task import Future
 from rclpy.time import Time
 from robot_msgs.action import Move, MoveTime
+from robot_msgs.srv import I2CWrite
+from std_msgs.msg import Int8
 
 
 class MovementNode(Node):
@@ -95,6 +98,10 @@ class MovementNode(Node):
 
     """
 
+    STM_ADDR = 0x67
+    DRIVE_TIME_CMD = 0x04
+    MOVING_TIME_STATE = 2
+
     def __init__(self) -> None:
         super().__init__('movement_node')
 
@@ -108,6 +115,17 @@ class MovementNode(Node):
         self.odom_sub = self.create_subscription(
             Odometry, 'odom', self.odom_callback, 10
         )
+        self.state_sub = self.create_subscription(
+            Int8, 'robot_state', self.state_callback, 10
+        )
+
+        self.write_cli = self.create_client(I2CWrite, 'i2c_read')
+        self.move_time_future: Future[I2CWrite.Response] | None = None
+
+        self.robot_state: int = 0
+
+        while not self.write_cli.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for I2C service...')
 
         self.callback_group = MutuallyExclusiveCallbackGroup()
         self.action_server = ActionServer(
@@ -137,6 +155,9 @@ class MovementNode(Node):
         )
 
         self.current_pose = (x, y, yaw)
+
+    def state_callback(self, msg: Int8):
+        self.robot_state = msg.data
 
     async def execute_callback(self, goal_handle) -> Move.Result:
         """
@@ -240,6 +261,50 @@ class MovementNode(Node):
 
         return distance, angle
 
+    def send_time_command(self, vel: float, angular_vel: float, time: float):
+        cmd: I2CWrite.Request = I2CWrite.Request()
+        cmd.device_address = self.STM_ADDR
+        cmd.register_address = self.DRIVE_TIME_CMD
+
+        vel_byte = int(vel)
+        angular_vel_byte = int(angular_vel)
+        time_byte = int(time * 1000)
+
+        cmd.data = [
+            vel_byte >> 24 & 0xFF,
+            vel_byte >> 16 & 0xFF,
+            vel_byte >> 8 & 0xFF,
+            vel_byte & 0xFF,
+            0,
+            0,
+            0,
+            0,
+            angular_vel_byte >> 24 & 0xFF,
+            angular_vel_byte >> 16 & 0xFF,
+            angular_vel_byte >> 8 & 0xFF,
+            angular_vel_byte >> 24 & 0xFF,
+            time_byte >> 16 & 0xFF,
+            time_byte >> 8 & 0xFF,
+            time_byte & 0xFF,
+            time_byte & 0xFF,
+        ]
+
+        self.move_time_future = self.write_cli.call_async(cmd)
+        self.move_time_future.add_done_callback(self.move_time_callback)
+
+    def move_time_callback(self, future):
+        try:
+            response: I2CWrite.Response | None = future.result()
+
+            if response is None:
+                raise Exception('No response')
+
+            if not response.success:
+                raise Exception(response.message)
+
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
+
     async def time_execute_callback(self, goal_handle) -> MoveTime.Result:
         """
         Execute time movement command.
@@ -258,9 +323,11 @@ class MovementNode(Node):
         feedback = MoveTime.Feedback()
         result = MoveTime.Result(success=False)
 
+        self.send_time_command(request.vel, request.angular_vel, request.time)
+
         start_time: Time = self.get_clock().now()
 
-        rate = self.create_rate(20)
+        rate = self.create_rate(10)
 
         while rclpy.ok():
             if not goal_handle.is_active:
@@ -278,17 +345,12 @@ class MovementNode(Node):
 
             time_left: float = request.time - elapsed_time
 
-            if time_left <= 0:
+            if time_left <= 0 and self.robot_state == self.MOVING_TIME_STATE:
                 self.get_logger().info('Goal reached successfully!')
                 goal_handle.succeed()
                 result.success = True
                 break
 
-            twist = Twist()
-            twist.linear.x = request.vel
-            twist.angular.z = request.angular_vel
-
-            self.twist_pub.publish(twist)
             rate.sleep()
 
         self.stop_robot()

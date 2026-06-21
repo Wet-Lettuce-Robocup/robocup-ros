@@ -35,7 +35,7 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
 from smbus2 import SMBus
-from std_msgs.msg import Float32, Int32
+from std_msgs.msg import Float32, Int32, Int8
 
 
 class I2CBusController(Node):
@@ -173,6 +173,7 @@ class I2CBusController(Node):
     STM_ADDR = 0x67
     ULTRASONIC_CMD = 0x83
     TEMP_CMD = 0x84
+    STATE_CMD = 0x80
 
     def __init__(self) -> None:
         super().__init__('i2c_controller')
@@ -202,6 +203,7 @@ class I2CBusController(Node):
         self.front_tof_pub = self.create_publisher(Int32, 'tof/front', 10)
         self.ultrasonic_pub = self.create_publisher(Int32, 'ultrasonic', 10)
         self.stm_temp_pub = self.create_publisher(Float32, 'stm_temp', 10)
+        self.robot_state_pub = self.create_publisher(Int8, 'robot_state', 10)
 
         self.claw_tof_en = OutputDevice(20, active_high=True, initial_value=False)
         self.right_tof_en = OutputDevice(19, active_high=True, initial_value=False)
@@ -349,6 +351,19 @@ class I2CBusController(Node):
             except IOError as e:
                 self.get_logger().error(f'I2C read failed! {e}')
 
+    def read_state(self) -> int | None:
+        """Attempt to read robot state from STM32."""
+        with self.i2c_lock:
+            try:
+                msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.STATE_CMD, 1)
+
+                dist: int = int.from_bytes(msg)
+
+                return dist
+
+            except IOError as e:
+                self.get_logger().error(f'I2C read failed! {e}')
+
     def publish_tof(self) -> None:
         """
         Attempt to read and publish data from all TOF sensors.
@@ -424,6 +439,15 @@ class I2CBusController(Node):
 
         temp_msg.data = temp
         self.stm_temp_pub.publish(temp_msg)
+
+        state_msg = Int8()
+        state: int | None = self.read_state()
+
+        if state is None:
+            return
+
+        state_msg.data = state
+        self.robot_state_pub.publish(state_msg)
 
 
 def main(args=None) -> None:
