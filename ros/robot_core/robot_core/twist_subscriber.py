@@ -112,11 +112,6 @@ class TwistSubscriber(Node):
         :param msg: Twist velocity command.
         :type msg: Twist
         """
-        current_time = self.get_clock().now()
-
-        if (current_time - self.last_stopped).nanoseconds < self.stop_delay * 1e9:
-            return
-
         linear_x = int(msg.linear.x * self.speed_mult)
         angular_z = int(msg.angular.z * self.speed_mult)
 
@@ -149,6 +144,11 @@ class TwistSubscriber(Node):
             angular_z >> 8 & 0xFF,
             angular_z & 0xFF,
         ]
+
+        current_time = self.get_clock().now()
+
+        if (current_time - self.last_stopped).nanoseconds < self.stop_delay * 1e9:
+            return
 
         # self.get_logger().info(f'{linear_x}, {angular_z}')
 

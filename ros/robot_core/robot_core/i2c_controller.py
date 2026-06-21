@@ -289,7 +289,7 @@ class I2CBusController(Node):
 
             except IOError as e:
                 response.success = False
-                response.message = e
+                response.message = str(e)
                 response.data = []
 
             return response
@@ -317,7 +317,7 @@ class I2CBusController(Node):
 
             except IOError as e:
                 response.success = False
-                response.message = e
+                response.message = str(e)
 
             return response
 
