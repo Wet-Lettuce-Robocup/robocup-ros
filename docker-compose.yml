@@ -12,12 +12,18 @@ services:
       - /lib/firmware:/lib/firmware
       - /lib/udev/rules.d:/lib/udev/rules.d
       - /lib/modules:/lib/modules
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ${XAUTHORITY:-/home/${USER}/.Xauthority}:/tmp/.Xauthority:ro
     group_add:
       - video
     devices:
       - /dev/h1x-0:/dev/h1x-0
     environment:
-      - HOME=/tpm
+      - DISPLAY=:0
+      - XAUTHORITY=/tmp/.Xauthority
+      - GDK_BACKEND=x11
+      - QT_X11_NO_MITSHM=1
+      - LIBGL_ALWAYS_INDIRECT=1
     stdin_open: true # equivalent to -i (interactive)
     tty: true # equivalent to -t (tty)
     stop_signal: SIGINT

@@ -132,7 +132,7 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
 COPY docker_entrypoint.sh /
 
-RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager ros-$ROS_DISTRO-vision-msgs \
+RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager ros-$ROS_DISTRO-vision-msgs ros-$ROS_DISTRO-camera-calibration \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
@@ -149,6 +149,9 @@ COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=external-ros-builder /underlay_ws/install /underlay_ws/install
 COPY --from=robot-ros-builder /overlay_ws/install /overlay_ws/install
+
+RUN mkdir -p /root/.ros/camera_info
+COPY ost.yaml /root/.ros/camera_info/ost.yaml
 
 RUN ldconfig
 
