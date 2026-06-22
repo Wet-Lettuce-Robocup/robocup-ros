@@ -70,13 +70,8 @@ class OdomPublisher(Node):
         super().__init__('odom_publisher')
 
         self.declare_parameter('wheel_dist', 0.175)
-        self.declare_parameter('counts_per_revolution', 480.0)
+        self.declare_parameter('counts_per_revolution', 1000.0)
         self.declare_parameter('wheel_radius', 0.04)
-
-        self.publisher_ = self.create_publisher(Odometry, 'odom', 10)
-        self.pub_timer = self.create_timer(0.1, self.publish_odom)  # 10 Hz
-        self.enc_timer = self.create_timer(0.1, self.request_enc)
-        self.start_time = self.get_clock().now()
 
         self.last_enc_fl = 0.0
         self.last_enc_fr = 0.0
@@ -99,11 +94,17 @@ class OdomPublisher(Node):
         while not self.cli.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for I2C service...')
 
+        self.publisher_ = self.create_publisher(Odometry, 'odom', 10)
+        self.pub_timer = self.create_timer(0.1, self.publish_odom)  # 10 Hz
+        self.start_time = self.get_clock().now()
+
         self.wheel_dist = self.get_parameter('wheel_dist').value
         self.counts_per_revolution = self.get_parameter('counts_per_revolution').value
         self.wheel_radius = self.get_parameter('wheel_radius').value
 
         self.wheel_circumefrence = math.pi * (self.wheel_radius**2)
+
+        self.encoders_set: bool = False
 
     def request_vel(self) -> None:
         """Request velocity data from the STM32 over I2C."""
@@ -150,7 +151,7 @@ class OdomPublisher(Node):
 
         request.device_address = self.STM_ADDR
         request.register_address = self.ENC_CMD
-        request.length = self.ENC_CMD
+        request.length = self.ENC_LEN
 
         self.enc_future = self.cli.call_async(request)
         self.enc_future.add_done_callback(self.enc_callback)
@@ -173,12 +174,21 @@ class OdomPublisher(Node):
 
             enc_msg = response.data
 
-            enc_fl = int.from_bytes(enc_msg[0:4], signed=True)
-            enc_fr = int.from_bytes(enc_msg[4:8], signed=True)
-            enc_bl = int.from_bytes(enc_msg[8:12], signed=True)
-            enc_br = int.from_bytes(enc_msg[12:16], signed=True)
+            enc_fl = int.from_bytes(enc_msg[2:4], signed=True)
+            enc_fr = int.from_bytes(enc_msg[6:8], signed=True)
+            enc_bl = int.from_bytes(enc_msg[10:12], signed=True)
+            enc_br = int.from_bytes(enc_msg[14:16], signed=True)
 
             self.encoders = enc_fl, enc_fr, enc_bl, enc_br
+
+            if not self.encoders_set:
+                (
+                    self.last_enc_fl,
+                    self.last_enc_fr,
+                    self.last_enc_bl,
+                    self.last_enc_br,
+                ) = self.encoders
+                self.encoders_set = True
 
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
@@ -192,8 +202,13 @@ class OdomPublisher(Node):
         Updates current position and angle, and publishes position and velocity to
         odometry topic.
         """
+        self.request_enc()
+
         current_time = self.get_clock().now()
         dt = 0.1
+
+        if not self.encoders_set:
+            return
 
         # vel_data = self.get_vel()
 
@@ -209,7 +224,7 @@ class OdomPublisher(Node):
         self.last_enc_fl = enc_fl
         self.last_enc_bl = enc_bl
 
-        d_r = enc_fr - self.last_enc_fr + enc_br - self.last_enc_br
+        d_r = (enc_fr - self.last_enc_fr + enc_br - self.last_enc_br) / 2
         self.last_enc_fr = enc_fr
         self.last_enc_br = enc_br
 
@@ -219,13 +234,13 @@ class OdomPublisher(Node):
         angle_change_l = d_l * angular_mult
         angle_change_r = d_r * angular_mult
 
-        self.dx = (angle_change_l + angle_change_r) / 2
-        self.dth = (angle_change_l - angle_change_r) / self.wheel_dist
+        self.vx = (angle_change_l + angle_change_r) / 2
+        self.vth = (angle_change_l - angle_change_r) / self.wheel_dist
 
         # Update position
-        self.x += self.dx * math.cos(self.th)
-        self.y += self.dx * math.sin(self.th)
-        self.th += self.dth
+        self.x += self.vx * math.cos(self.th)
+        self.y += self.vx * math.sin(self.th)
+        self.th += self.vth
 
         # Orientation as quaternion
         odom_quat = self.euler_to_quaternion(0, 0, self.th)
@@ -243,8 +258,8 @@ class OdomPublisher(Node):
 
         # Set the velocity
         odom.twist.twist = Twist(
-            linear=Vector3(x=self.vx, y=0.0, z=0.0),
-            angular=Vector3(x=0.0, y=0.0, z=self.dth / dt),
+            linear=Vector3(x=self.vx / dt, y=0.0, z=0.0),
+            angular=Vector3(x=0.0, y=0.0, z=self.vth / dt),
         )
 
         self.publisher_.publish(odom)

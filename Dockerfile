@@ -96,10 +96,11 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
 COPY docker_entrypoint.sh /
 
-RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \
+RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager ros-$ROS_DISTRO-rmw-cyclonedds-cpp \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
+  python3-matplotlib \
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-plugins-ugly \
@@ -119,6 +120,7 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc && \
 
 ENV ROS_DOMAIN_ID=1
 ENV ROS_LOCALHOST_ONLY=0
+# ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
-CMD ["ros2", "launch", "robot_core", "state_manager.launch.py"]
+CMD ["ros2", "launch", "robot_core", "b_rescue.launch.py"]

@@ -86,18 +86,27 @@ class StateMachineNode(Node):
         )
         self.fan_pub = self.create_publisher(Int32, '/fan/target_speed', 10)
 
-        # Lifecycle service clients
-        self.line_follower_client = self.create_client(
-            ChangeState, f'/{self.line_follow_node}/change_state'
-        )
-        self.rescue_client = self.create_client(
-            ChangeState, f'/{self.rescue_node}/change_state'
-        )
-
         self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
         self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
 
+        # Lifecycle service clients
+        self.line_follower_client = self.create_client(
+            ChangeState, f'{self.line_follow_node}/change_state'
+        )
+
+        while not self.line_follower_client.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for line follower node...')
+
+        self.rescue_client = self.create_client(
+            ChangeState, f'{self.rescue_node}/change_state'
+        )
+
+        while not self.rescue_client.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for rescue node...')
+
         self.timer = self.create_timer(0.05, self.state_loop)
+        self.transition_future = None
+        self.transitioning_num: int = 0
 
     def change_node_state(self, client, transition_id) -> None:
         """
@@ -114,10 +123,16 @@ class StateMachineNode(Node):
         :param transition_id: Target lifecycle node state.
         :type transition_id: Transition
         """
+        self.transitioning_num += 1
         req = ChangeState.Request()
         req.transition.id = transition_id
-        future = client.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
+        self.transition_future = client.call_async(req)
+        self.transition_future.add_done_callback(self.transition_completed_callback)
+        self.get_logger().info(f'Active transitions: {self.transitioning_num}')
+
+    def transition_completed_callback(self, _):
+        self.transitioning_num -= 1
+        self.get_logger().info(f'Active transitions: {self.transitioning_num}')
 
     def rescue_active_callback(self, msg: Bool) -> None:
         """
@@ -165,8 +180,15 @@ class StateMachineNode(Node):
         """
         from lifecycle_msgs.msg import Transition
 
+        if self.transitioning_num > 0:
+            return
+
         if self.current_state == State.INIT:
-            # Activate motor control for all states
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_CONFIGURE
+            )
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
+
             self.current_state = State.IDLE
 
         elif self.current_state == State.IDLE:
@@ -176,7 +198,7 @@ class StateMachineNode(Node):
                 self.fan_pub.publish(fan_msg)
 
                 self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
+                    self.rescue_client, Transition.TRANSITION_ACTIVATE
                 )
 
                 self.current_state = State.LINE_FOLLOWING

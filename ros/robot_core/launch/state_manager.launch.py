@@ -176,10 +176,17 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    ekf_node = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
+    # ekf_node = Node(
+    #     package='robot_localization',
+    #     executable='ekf_node',
+    #     name='ekf_filter_node',
+    #     output='screen',
+    #     parameters=[config],
+    # )
+    movement_action_node = Node(
+        package='robot_core',
+        executable='movement_actions',
+        name='movement_actions',
         output='screen',
         parameters=[config],
     )
@@ -209,6 +216,7 @@ def generate_launch_description():
             servo_tray_release,
             odom_publisher,
             twist_subscriber,
+            movement_action_node,
             pwm_0_controller,
             pwm_1_controller,
             pwm_2_controller,
@@ -217,7 +225,7 @@ def generate_launch_description():
             fan_controller,
             front_camera,
             down_camera,
-            ekf_node,
+            # ekf_node,
             line_follow_launch,
             state_machine,
         ]

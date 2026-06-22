@@ -1,6 +1,7 @@
 state_machine:
   ros__parameters:
     line_follow_node: /line_follow/core_loop
+    rescue_node: /rescue_node
 
 servo_grab:
   ros__parameters:
@@ -46,7 +47,7 @@ idle_button:
     ros__parameters:
       camera: 0
       role: 'viewfinder'
-      format: 'XRGB8888'
+      format: 'BGR888'
       width: 1536
       height: 864
       sensor_mode: '2304:1296'
@@ -57,7 +58,7 @@ idle_button:
     ros__parameters:
       camera: 1
       role: 'viewfinder'
-      format: 'XRGB8888'
+      format: 'BGR888'
       width: 1536
       height: 864
       sensor_mode: '2304:1296'
@@ -84,6 +85,20 @@ bno08x_driver:
       imu:
         enabled: true
         rate: 100 # max 400 Hz
+
+twist_subscriber:
+  ros__parameters:
+    wheel_dist: 0.155
+    counts_per_revolution: 1000.0
+    wheel_radius: 0.04
+    max_counts_per_second: 1800.0
+    stop_delay: 0.0
+
+odom_publisher:
+  ros__parameters:
+    wheel_dist: 0.155
+    counts_per_revolution: 1000.0
+    wheel_radius: 0.04
 
 ekf_filter_node:
   ros__parameters:

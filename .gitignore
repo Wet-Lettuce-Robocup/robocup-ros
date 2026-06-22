@@ -4,3 +4,5 @@ docs_output/
 log/
 build/
 install/
+videos/
+*.mp4
