@@ -51,6 +51,7 @@ idle_button:
       height: 864
       sensor_mode: '2304:1296'
       orientation: 180
+      camera_info_url: "file:///root/.ros/camera_info/ost.yaml"
 
 /down_camera:
   camera_node:

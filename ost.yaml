@@ -1,0 +1,26 @@
+image_width: 1536
+image_height: 864
+camera_name: imx708_wide__base_axi_pcie_1000120000_rp1_i2c_88000_imx708_1a_1536x864_2304x1296_RGGB_PISP_COMP1_RAW
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [683.31285,   0.     , 764.89803,
+           0.     , 683.10689, 408.4118 ,
+           0.     ,   0.     ,   1.     ]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [0.135130, -0.097016, -0.006109, -0.004469, 0.000000]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [1., 0., 0.,
+         0., 1., 0.,
+         0., 0., 1.]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [697.084  ,   0.     , 749.37778,   0.     ,
+           0.     , 717.58048, 402.6673 ,   0.     ,
+           0.     ,   0.     ,   1.     ,   0.     ]
