@@ -16,9 +16,11 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/LEDCommand.msg"
+  "msg/Detections.msg"
   "srv/I2CRead.srv"
   "srv/I2CWrite.srv"
   "action/Move.action"
+  "action/MoveTime.action"
   DEPENDENCIES std_msgs builtin_interfaces
 )
 

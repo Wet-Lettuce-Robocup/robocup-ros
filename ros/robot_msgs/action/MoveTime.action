@@ -1,0 +1,10 @@
+# Goal
+float32 vel
+float32 angular_vel
+float32 time
+---
+# Result
+bool success
+---
+# Feedback
+float32 time_elapsed

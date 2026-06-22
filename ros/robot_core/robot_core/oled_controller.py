@@ -24,7 +24,7 @@ from PIL import ImageFont
 from rcl_interfaces.msg import Log
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32, Int32, String
+from std_msgs.msg import Float32, Float64, Int32, String
 
 
 class OLEDController(Node):
@@ -67,7 +67,7 @@ class OLEDController(Node):
             String, 'oled_status', self.status_callback, 10
         )
         self.error_sub = self.create_subscription(
-            Float32, 'line_error', self.error_callback, 10
+            Float64, 'line_follow/line_error', self.error_callback, 10
         )
         self.silver_sub = self.create_subscription(
             Int32, 'oled_silver', self.silver_callback, 10
@@ -188,7 +188,7 @@ class OLEDController(Node):
         if self.current_page == 0:
             self.update_display()
 
-    def error_callback(self, msg: Float32):
+    def error_callback(self, msg: Float64):
         self.error_value = int(msg.data)
         if self.current_page == 0:
             self.update_display()
