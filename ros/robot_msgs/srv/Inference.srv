@@ -1,0 +1,10 @@
+# Request
+string message
+---
+# Response
+string type
+float32 confidence
+float32 distance
+float32 bearing
+string cx
+bool success
