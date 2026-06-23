@@ -28,3 +28,8 @@ services:
     tty: true # equivalent to -t (tty)
     stop_signal: SIGINT
     stop_grace_period: 20s
+    command: 
+    - ros2 
+    - launch 
+    - robot_core
+    - b_rescue.launch.py
