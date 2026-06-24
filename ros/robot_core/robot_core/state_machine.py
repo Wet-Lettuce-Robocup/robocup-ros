@@ -74,9 +74,11 @@ class StateMachineNode(Node):
 
         self.declare_parameter('line_follow_node', 'line_follower')
         self.declare_parameter('rescue_node', 'rescue')
+        self.declare_parameter('ml_rescue', 'ml_rescue')
 
         self.line_follow_node: str = self.get_parameter('line_follow_node').value
         self.rescue_node: str = self.get_parameter('rescue_node').value
+        self.ml_rescue_node: str = self.get_parameter('ml_rescue').value
 
         self.rescue_active_sub = self.create_subscription(
             Bool, '/rescue_active', self.rescue_active_callback, 10
@@ -97,12 +99,17 @@ class StateMachineNode(Node):
         while not self.line_follower_client.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for line follower node...')
 
-        self.rescue_client = self.create_client(
-            ChangeState, f'{self.rescue_node}/change_state'
-        )
+        self.rescue_client = self.create_client(ChangeState, f'{self.rescue_node}/change_state')
 
         while not self.rescue_client.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for rescue node...')
+
+        self.ml_rescue_client = self.create_client(
+            ChangeState, f'{self.ml_rescue_node}/change_state'
+        )
+
+        while not self.ml_rescue_client.wait_for_service(timeout_sec=1):
+            self.get_logger().info('Waiting for ml rescue node...')
 
         self.timer = self.create_timer(0.05, self.state_loop)
         self.transition_future = None
@@ -184,10 +191,9 @@ class StateMachineNode(Node):
             return
 
         if self.current_state == State.INIT:
-            self.change_node_state(
-                self.line_follower_client, Transition.TRANSITION_CONFIGURE
-            )
+            self.change_node_state(self.line_follower_client, Transition.TRANSITION_CONFIGURE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
+            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_CONFIGURE)
 
             self.current_state = State.IDLE
 
@@ -197,9 +203,7 @@ class StateMachineNode(Node):
                 fan_msg.data = 100
                 self.fan_pub.publish(fan_msg)
 
-                self.change_node_state(
-                    self.rescue_client, Transition.TRANSITION_ACTIVATE
-                )
+                self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
 
                 self.current_state = State.LINE_FOLLOWING
 
@@ -208,36 +212,28 @@ class StateMachineNode(Node):
             fan_msg.data = 0
             self.fan_pub.publish(fan_msg)
 
-            self.change_node_state(
-                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-            )
+            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
             if self.rescue_active:
-                self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-                )
-                self.change_node_state(
-                    self.rescue_client, Transition.TRANSITION_ACTIVATE
-                )
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
 
         elif self.current_state == State.RESCUE:
             if not self.rescue_active:
-                self.change_node_state(
-                    self.rescue_client, Transition.TRANSITION_DEACTIVATE
-                )
-                self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
-                )
+                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
 
         elif self.current_state == State.STOP:
             # Deactivate all nodes
-            self.change_node_state(
-                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-            )
+            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
 
 
 def main(args=None):

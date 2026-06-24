@@ -32,4 +32,4 @@ services:
     - ros2 
     - launch 
     - robot_core
-    - b_rescue.launch.py
+    - comp.launch.py
