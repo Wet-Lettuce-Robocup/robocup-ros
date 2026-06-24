@@ -2,7 +2,7 @@ state_machine:
   ros__parameters:
     line_follow_node: /line_follow/core_loop
     rescue_node: /rescue_node
-    ml_rescue_node: /ml_rescue
+    ml_rescue_node: /ml_rescue/ml_rescue_node
 
 servo_grab:
   ros__parameters:

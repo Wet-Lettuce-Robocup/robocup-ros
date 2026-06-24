@@ -189,12 +189,6 @@ def generate_launch_description():
         parameters=[config],
     )
 
-    line_follow_pkg = get_package_share_directory('line_follow')
-    line_follow_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(line_follow_pkg, 'launch', 'line_follow.launch.py')
-        )
-    )
     state_machine = Node(
         package='robot_core',
         executable='state_machine',
@@ -223,6 +217,5 @@ def generate_launch_description():
         front_camera,
         down_camera,
         # ekf_node,
-        line_follow_launch,
         state_machine,
     ])
