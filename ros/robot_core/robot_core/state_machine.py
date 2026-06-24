@@ -17,8 +17,8 @@
 from enum import Enum
 
 from gpiozero import OutputDevice
-from lifecycle_msgs.srv import ChangeState
 from lifecycle_msgs.msg import Transition
+from lifecycle_msgs.srv import ChangeState
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool, Int32
@@ -186,7 +186,6 @@ class StateMachineNode(Node):
         **Rescue state**, checks if rescue_active is inactive or idle_toggle is
         active, in which case it will transition to line follow or idle state respectively.
         """
-
         if self.transitioning_num > 0:
             return
 
