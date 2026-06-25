@@ -156,6 +156,13 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
+    front_led_controller = Node(
+        package='robot_core',
+        executable='front_led',
+        name='front_led',
+        output='screen',
+        parameters=[config],
+    )
     front_camera = Node(
         package='camera_ros',
         executable='camera_node',
@@ -212,6 +219,7 @@ def generate_launch_description():
         status_led,
         idle_button,
         fan_controller,
+        front_led_controller,
         front_camera,
         down_camera,
         # ekf_node,
