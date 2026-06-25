@@ -104,8 +104,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Build overlay on top of underlay
 RUN --mount=type=cache,target=/overlay_ws/build \
-  --mount=type=cache,target=/overlay_ws/install \
-  --mount=type=cache,target=/overlay_ws/log \
   --mount=type=cache,target=/overlay_ws/ccache \
   export CCACHE_DIR=/overlay_ws/ccache && \
   export PATH="/usr/lib/ccache:$PATH" && \
