@@ -97,7 +97,8 @@ COPY ros/ ./src/
 # Install dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
+  apt-get update \
+  && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
   && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
   && rm -rf /var/lib/apt/lists/*"
 
