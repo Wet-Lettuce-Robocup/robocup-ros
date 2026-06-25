@@ -97,18 +97,19 @@ COPY ros/ ./src/
 # Install dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  apt-get update \
-  && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
+  /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
   && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
   && rm -rf /var/lib/apt/lists/*"
 
 # Build overlay on top of underlay
 RUN --mount=type=cache,target=/overlay_ws/build \
+  --mount=type=cache,target=/overlay_ws/install \
+  --mount=type=cache,target=/overlay_ws/log \
   --mount=type=cache,target=/overlay_ws/ccache \
   export CCACHE_DIR=/overlay_ws/ccache && \
   export PATH="/usr/lib/ccache:$PATH" && \
   /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
+  colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
 # ==================== RUNTIME STAGE ====================
 FROM hailo-base AS runtime
