@@ -158,8 +158,8 @@ def generate_launch_description():
     )
     front_led_controller = Node(
         package='robot_core',
-        executable='front_led',
-        name='front_led',
+        executable='front_led_controller',
+        name='front_led_controller',
         output='screen',
         parameters=[config],
     )
