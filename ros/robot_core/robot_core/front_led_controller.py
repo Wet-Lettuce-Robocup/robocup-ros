@@ -21,10 +21,9 @@ from std_msgs.msg import Bool, Int32
 
 class LEDController(Node):
     """
-    Node for controlling fan with ros2.
+    Node for controlling front LEDs with ros2.
 
-    - Subscribed to fan/target_speed (Int32, 0-100%)
-    - RPM is sampled over 3 seconds and published as percentage to fan/speed (Int32, 0-100%)
+    - Subscribed to front_led/target_brightness (Int32, 0-100%)
     """
 
     PWM_CHANNEL = 0
@@ -44,7 +43,9 @@ class LEDController(Node):
         # publishers for pwm controller
         self.enable_pub = self.create_publisher(Bool, f'/pwm{self.PWM_CHANNEL}/enable', 10)
         self.period_pub = self.create_publisher(Int32, f'/pwm{self.PWM_CHANNEL}/period', 10)
-        self.duty_cycle_pub = self.create_publisher(Int32, f'/pwm{self.PWM_CHANNEL}/duty_cycle', 10)
+        self.duty_cycle_pub = self.create_publisher(
+            Int32, f'/pwm{self.PWM_CHANNEL}/duty_cycle', 10
+        )
 
         self.target_brightness = 0
 
