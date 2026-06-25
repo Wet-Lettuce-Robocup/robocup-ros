@@ -6,5 +6,5 @@ string[] type
 float32[] confidence
 float32[] distance
 float32[] bearing
-string[] cx
+float32[] cx
 bool success
