@@ -110,7 +110,7 @@ RUN --mount=type=cache,target=/overlay_ws/build \
   export CCACHE_DIR=/overlay_ws/ccache && \
   export PATH="/usr/lib/ccache:$PATH" && \
   /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-  colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
 # ==================== RUNTIME STAGE ====================
 FROM hailo-base AS runtime
