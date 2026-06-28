@@ -95,7 +95,7 @@ FROM external-ros-builder AS robot-ros-builder
 WORKDIR /overlay_ws
 RUN mkdir -p src
 
-COPY ros/line_follow/package.xml src/line_follow
+COPY ros/line_follow/package.xml src/line_follow/
 COPY ros/toby-software-rescue/src/ml_rescue/package.xml src/toby-software-rescue/src/ml_rescue/
 COPY ros/toby-software-rescue/src/rescue_msgs/package.xml src/toby-software-rescue/src/rescue_msgs/
 COPY ros/bain-software-rescue/package.xml src/bain-software-rescue/
