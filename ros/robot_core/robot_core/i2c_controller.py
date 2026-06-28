@@ -219,9 +219,7 @@ class I2CBusController(Node):
 
         self.init_tof()
 
-        self.timer = self.create_timer(
-            0.1, self.timer_callback, callback_group=self.cb_group_3
-        )
+        self.timer = self.create_timer(0.1, self.timer_callback, callback_group=self.cb_group_3)
 
     def init_tof(self) -> None:
         """
@@ -327,9 +325,7 @@ class I2CBusController(Node):
         """Attempt to read ultrasonic sensor data from STM32."""
         with self.i2c_lock:
             try:
-                msg = self.bus.read_i2c_block_data(
-                    self.STM_ADDR, self.ULTRASONIC_CMD, 4
-                )
+                msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.ULTRASONIC_CMD, 4)
 
                 dist: int = int.from_bytes(msg)
 
@@ -377,8 +373,9 @@ class I2CBusController(Node):
         if self.claw_tof_enabled:
             try:
                 claw_dist: float | None = self.claw_tof.distance
-            except OSError:
-                return
+            except OSError as e:
+                self.get_logger().warning(f'Claw TOF read failed: {e}')
+                claw_dist = None
 
             if claw_dist is None:
                 msg.data = -1
@@ -390,8 +387,9 @@ class I2CBusController(Node):
         if self.right_tof_enabled:
             try:
                 right_dist: float | None = self.right_tof.distance
-            except OSError:
-                return
+            except OSError as e:
+                self.get_logger().warning(f'Right TOF read failed: {e}')
+                right_dist = None
 
             if right_dist is None:
                 msg.data = -1
@@ -403,8 +401,9 @@ class I2CBusController(Node):
         if self.front_tof_enabled:
             try:
                 front_dist: float | None = self.front_tof.distance
-            except OSError:
-                return
+            except OSError as e:
+                self.get_logger().warning(f'Front TOF read failed: {e}')
+                front_dist = None
 
             if front_dist is None:
                 msg.data = -1
@@ -425,20 +424,16 @@ class I2CBusController(Node):
         msg = Int32()
         ultrasonic_dist: int | None = self.read_ultrasonic()
 
-        if ultrasonic_dist is None:
-            return
-
-        msg.data = ultrasonic_dist
-        self.ultrasonic_pub.publish(msg)
+        if ultrasonic_dist is not None:
+            msg.data = ultrasonic_dist
+            self.ultrasonic_pub.publish(msg)
 
         temp_msg = Float32()
         temp: float | None = self.read_temp()
 
-        if temp is None:
-            return
-
-        temp_msg.data = temp
-        self.stm_temp_pub.publish(temp_msg)
+        if temp is not None:
+            temp_msg.data = temp
+            self.stm_temp_pub.publish(temp_msg)
 
         state_msg = Int8()
         state: int | None = self.read_state()
