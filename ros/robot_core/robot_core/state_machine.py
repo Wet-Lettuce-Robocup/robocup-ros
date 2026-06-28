@@ -198,7 +198,7 @@ class StateMachineNode(Node):
                 self.fan_pub.publish(fan_msg)
 
                 self.change_node_state(
-                    self.rescue_client, Transition.TRANSITION_ACTIVATE
+                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
                 )
 
                 self.current_state = State.LINE_FOLLOWING
