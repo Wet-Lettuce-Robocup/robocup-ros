@@ -74,10 +74,11 @@ ENV PATH="/usr/lib/ccache:$PATH"
 ENV OpenCV_DIR=/usr/local/lib/cmake/opencv4
 
 WORKDIR /underlay_ws
-RUN --mount=type=cache,target=/var/lib/apt/lists \
-  --mount=type=cache,target=/var/cache/apt/archives \
+RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/underlay_ws/build \
   --mount=type=cache,target=/underlay_ws/ccache \
+  --mount=type=cache,target=/root/.ros \
   export CCACHE_DIR=/underlay_ws/ccache && \
   mkdir -p src \
   && git clone --depth 1 https://github.com/christianrauch/camera_ros.git src/camera_ros \
@@ -94,15 +95,29 @@ FROM external-ros-builder AS robot-ros-builder
 WORKDIR /overlay_ws
 RUN mkdir -p src
 
-COPY ros/ ./src/
+COPY ros/line_follow/package.xml src/line_follow
+COPY ros/toby-software-rescue/src/ml_rescue/package.xml src/toby-software-rescue/src/ml_rescue/
+COPY ros/toby-software-rescue/src/rescue_msgs/package.xml src/toby-software-rescue/src/rescue_msgs/
+COPY ros/bain-software-rescue/package.xml src/bain-software-rescue/
+COPY ros/bno08x_ros2_driver/package.xml src/bno08x_ros2_driver/
+COPY ros/robot_core/package.xml src/robot_core/
+COPY ros/robot_msgs/package.xml src/robot_msgs/
 
 # Install dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  apt-get update \
-  && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
-  && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
-  && rm -rf /var/lib/apt/lists/*"
+  --mount=type=cache,target=/root/.ros \
+  apt-get update && \
+  /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
+  rosdep update && \
+  rosdep install \
+  --from-paths src \
+  --ignore-src \
+  --rosdistro ${ROS_DISTRO} \
+  -r -y \
+  --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev'"
+
+COPY ros/ ./src/ 
 
 # Build overlay on top of underlay
 RUN --mount=type=cache,target=/overlay_ws/build \
