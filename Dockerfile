@@ -31,6 +31,8 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/* && \
   rm -f /tmp/*
 
+ENV PIP_BREAK_SYSTEM_PACKAGES=0
+
 # ==================== LIBCAMERA STAGE ====================
 FROM base AS libcamera-builder
 
@@ -130,7 +132,8 @@ RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-
   gstreamer1.0-libav \
   libboost-python1.83.0 \
   python3-dev && \
-  ldconfig
+  ldconfig && \
+  rm -rf /var/lib/apt/lists/*
 
 COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local
