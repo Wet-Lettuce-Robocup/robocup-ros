@@ -118,9 +118,9 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc && \
   echo "source /underlay_ws/install/setup.bash" >> /etc/bash.bashrc && \
   echo "source ${ROS_WS}/install/setup.bash" >> /etc/bash.bashrc
 
-ENV ROS_DOMAIN_ID=1
-ENV ROS_LOCALHOST_ONLY=0
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+# ENV ROS_DOMAIN_ID=1
+# ENV ROS_LOCALHOST_ONLY=0
+# ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
 CMD ["ros2", "launch", "robot_core", "state_manager.launch.py"]
