@@ -123,4 +123,4 @@ ENV ROS_LOCALHOST_ONLY=0
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
-CMD ["ros2", "launch", "robot_core", "b_rescue.launch.py"]
+CMD ["ros2", "launch", "robot_core", "state_manager.launch.py"]
