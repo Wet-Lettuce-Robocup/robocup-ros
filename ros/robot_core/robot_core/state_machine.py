@@ -198,20 +198,11 @@ class StateMachineNode(Node):
 
         elif self.current_state == State.IDLE:
             if not self.idle_toggle:
-                fan_msg = Int32()
-                fan_msg.data = 100
-                self.fan_pub.publish(fan_msg)
-
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
-                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
 
                 self.current_state = State.LINE_FOLLOWING
 
         elif self.idle_toggle:
-            fan_msg = Int32()
-            fan_msg.data = 0
-            self.fan_pub.publish(fan_msg)
-
             self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
