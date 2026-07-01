@@ -241,7 +241,7 @@ class I2CBusController(Node):
         except Exception as e:
             self.claw_tof_en.off()
             self.claw_tof_enabled = False
-            self.get_logger().error(f'Claw TOF not enabled! {e}')
+            self.get_logger().error(f'Claw TOF init failed! {e}')
 
         try:
             self.right_tof_en.on()
@@ -252,7 +252,7 @@ class I2CBusController(Node):
         except Exception as e:
             self.right_tof_en.off()
             self.right_tof_enabled = False
-            self.get_logger().error(f'Right TOF not enabled! {e}')
+            self.get_logger().error(f'Right TOF init failed! {e}')
 
         try:
             self.front_tof_en.on()
@@ -263,7 +263,7 @@ class I2CBusController(Node):
         except Exception as e:
             self.front_tof_en.off()
             self.front_tof_enabled = False
-            self.get_logger().error(f'Front TOF not enabled! {e}')
+            self.get_logger().error(f'Front TOF init failed! {e}')
 
     def handle_read(
         self, request: I2CRead.Request, response: I2CRead.Response
@@ -373,8 +373,7 @@ class I2CBusController(Node):
         if self.claw_tof_enabled:
             try:
                 claw_dist: float | None = self.claw_tof.distance
-            except OSError as e:
-                self.get_logger().warning(f'Claw TOF read failed: {e}')
+            except OSError:
                 claw_dist = None
 
             if claw_dist is None:
@@ -387,8 +386,7 @@ class I2CBusController(Node):
         if self.right_tof_enabled:
             try:
                 right_dist: float | None = self.right_tof.distance
-            except OSError as e:
-                self.get_logger().warning(f'Right TOF read failed: {e}')
+            except OSError:
                 right_dist = None
 
             if right_dist is None:
@@ -401,8 +399,7 @@ class I2CBusController(Node):
         if self.front_tof_enabled:
             try:
                 front_dist: float | None = self.front_tof.distance
-            except OSError as e:
-                self.get_logger().warning(f'Front TOF read failed: {e}')
+            except OSError:
                 front_dist = None
 
             if front_dist is None:
