@@ -74,7 +74,7 @@ idle_button:
       orientation: 0
       use_intra_process_comms: true
       qos_overrides:
-        /camera/image_raw:
+        /down_camera/camera_node/image_raw:
           publisher:
             reliability: best_effort
             history: keep_last
