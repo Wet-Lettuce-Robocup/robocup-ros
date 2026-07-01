@@ -160,7 +160,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
-  ffmpeg \
   python3-matplotlib \
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
