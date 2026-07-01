@@ -54,6 +54,7 @@ setup(
             'pwm_controller = robot_core.pwm_controller:main',
             'claw_services = robot_core.claw_services:main',
             'fan_controller = robot_core.fan_controller:main',
+            'fan_curve = robot_core.fan_curve:main',
             'front_led_controller = robot_core.front_led_controller:main',
             'movement_actions = robot_core.movement_actions:main',
         ],

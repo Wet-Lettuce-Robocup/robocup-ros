@@ -61,6 +61,7 @@ class FanCurve(Node):
         else:
             msg.data = self.IDLE_SPEED
 
+        self.get_logger().info(f'Setting fan temp to {msg} bc temp is {self.pi_temp_c}')
         self.target_speed_pub.publish(msg)
 
     def _read_pi_temp_c(self) -> float | None:
