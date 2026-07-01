@@ -37,7 +37,7 @@ class FanCurve(Node):
     def __init__(self) -> None:
         super().__init__('fan_curve')
 
-        self.target_speed_sub = self.create_publisher(
+        self.target_speed_pub = self.create_publisher(
             # should be int from 0-100 (%)
             Int32,
             'fan/target_speed',
