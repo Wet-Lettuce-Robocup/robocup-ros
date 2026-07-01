@@ -32,7 +32,7 @@ class FanCurve(Node):
     IDLE_SPEED = 40
     LOW_TEMP, LOW_SPEED = 40, 50
     MED_TEMP, MED_SPEED = 50, 70
-    HIGH_TEMP, HIGH_SPEED = 60, 100
+    HIGH_TEMP, HIGH_SPEED = 70, 100
 
     def __init__(self) -> None:
         super().__init__('fan_curve')
@@ -61,7 +61,6 @@ class FanCurve(Node):
         else:
             msg.data = self.IDLE_SPEED
 
-        self.get_logger().info(f'Setting fan temp to {msg} bc temp is {self.pi_temp_c}')
         self.target_speed_pub.publish(msg)
 
     def _read_pi_temp_c(self) -> float | None:
