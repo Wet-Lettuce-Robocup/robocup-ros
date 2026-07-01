@@ -1,16 +1,24 @@
 # ==================== BASE / COMMON ====================
 FROM ros:kilted AS base
 
-RUN apt-get update && apt-get install -y \
-  python3-pip git python3-jinja2 \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install -y python3-pip git python3-jinja2 \
   libboost-dev \
   libgnutls28-dev openssl libtiff-dev pybind11-dev \
-  meson cmake \
+  meson cmake ccache \
   python3-yaml python3-ply \
   libglib2.0-dev libgstreamer-plugins-base1.0-dev \
   python3-colcon-meson \
   build-essential \
-  && rm -rf /var/lib/apt/lists/*
+  ffmpeg \
+  libavcodec-dev \
+  libavformat-dev \
+  libavutil-dev \
+  libswscale-dev \
+  libavdevice-dev
+
+ENV CCACHE_DIR=/root/.ccache
 
 RUN git config --global http.sslVerify false
 
@@ -37,8 +45,10 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=0
 FROM base AS libcamera-builder
 
 WORKDIR /build/libcamera
+ENV CCACHE_DIR=/root/.ccache
 
-RUN git clone --depth 1 https://github.com/raspberrypi/libcamera.git . \
+RUN --mount=type=cache,target=/root/.ccache \
+  git clone --depth 1 https://github.com/raspberrypi/libcamera.git . \
   && meson setup build --buildtype=release -Dpipelines=rpi/vc4,rpi/pisp -Dipas=rpi/vc4,rpi/pisp -Dv4l2=enabled -Dgstreamer=enabled -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=disabled -Ddocumentation=disabled -Dpycamera=enabled \
   && ninja -C build install
 
@@ -46,19 +56,27 @@ RUN git clone --depth 1 https://github.com/raspberrypi/libcamera.git . \
 FROM base AS opencv-builder
 
 WORKDIR /build/opencv
+ENV CCACHE_DIR=/root/.ccache
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential libgtk-3-dev
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install -y --no-install-recommends \
+  build-essential libgtk-3-dev pkg-config
 
 RUN git clone --depth 1 --branch 4.x https://github.com/opencv/opencv.git \
   && git clone --depth 1 --branch 4.x https://github.com/opencv/opencv_contrib.git
 
 WORKDIR /build/opencv/opencv/build
-RUN cmake .. \
+RUN --mount=type=cache,target=/root/.ccache \ 
+  cmake .. \
   -DCMAKE_BUILD_TYPE=RELEASE \
   -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+  -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
   -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules \
   -DWITH_LIBCAMERA=ON \
+  -DWITH_FFMPEG=ON \
+  -DOPENCV_FFMPEG_USE_FIND_PACKAGE=ON \
   && make -j$(nproc) \
   && make install
 
@@ -69,7 +87,9 @@ COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=libcamera-builder /usr/local /usr/local
 RUN ldconfig
 
-RUN apt-get update && apt-get install -y libboost-python-dev ccache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install -y libboost-python-dev ccache
 ENV PATH="/usr/lib/ccache:$PATH"
 ENV OpenCV_DIR=/usr/local/lib/cmake/opencv4
 
@@ -89,35 +109,32 @@ RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
   && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev cv_bridge' \
   && colcon build --packages-select camera_ros cv_bridge --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
 
+# ==================== ROS2 ROBOT PACKAGE FILES ====================
+FROM alpine:3 AS cacher
+
+# 1. Mount the host source directory temporarily
+# 2. Extract ONLY package.xml files straight into the image filesystem
+RUN --mount=type=bind,source=./ros,target=/tmp/src \
+  mkdir -p /manifests && \
+  find /tmp/src -name "package.xml" -exec cp --parents {} /manifests/ \;
+
 # ==================== ROS2 ROBOT PACKAGES ====================
 FROM external-ros-builder AS robot-ros-builder
 
 WORKDIR /overlay_ws
 RUN mkdir -p src
-
-COPY ros/line_follow/package.xml src/line_follow/
-COPY ros/toby-software-rescue/src/ml_rescue/package.xml src/toby-software-rescue/src/ml_rescue/
-COPY ros/toby-software-rescue/src/rescue_msgs/package.xml src/toby-software-rescue/src/rescue_msgs/
-COPY ros/bain-software-rescue/package.xml src/bain-software-rescue/
-COPY ros/bno08x_ros2_driver/package.xml src/bno08x_ros2_driver/
-COPY ros/robot_core/package.xml src/robot_core/
-COPY ros/robot_msgs/package.xml src/robot_msgs/
+COPY --from=cacher /manifests/tmp/src/ ./src/
 
 # Install dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  --mount=type=cache,target=/root/.ros \
-  apt-get update && \
-  /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-  rosdep update && \
-  rosdep install \
-  --from-paths src \
-  --ignore-src \
-  --rosdistro ${ROS_DISTRO} \
-  -r -y \
-  --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev'"
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+  apt-get update \
+  && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
+  && rosdep install --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} -r -y --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev' \
+  && rm -rf /var/lib/apt/lists/*"
 
-COPY ros/ ./src/ 
+COPY ros/ ./src/
 
 # Build overlay on top of underlay
 RUN --mount=type=cache,target=/overlay_ws/build \
@@ -135,7 +152,11 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1
 RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
 COPY docker_entrypoint.sh /
 
-RUN apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager ros-$ROS_DISTRO-vision-msgs ros-$ROS_DISTRO-camera-calibration ros-$ROS_DISTRO-rmw-cyclonedds-cpp \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \ 
+  ros-$ROS_DISTRO-rmw-cyclonedds-cpp ros-$ROS_DISTRO-rclcpp-components \
+  ros-$ROS_DISTRO-vision-msgs ros-$ROS_DISTRO-camera-calibration \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
@@ -165,8 +186,8 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc && \
   echo "source /underlay_ws/install/setup.bash" >> /etc/bash.bashrc && \
   echo "source ${ROS_WS}/install/setup.bash" >> /etc/bash.bashrc
 
-ENV ROS_DOMAIN_ID=1
-ENV ROS_LOCALHOST_ONLY=0
+# ENV ROS_DOMAIN_ID=1
+# ENV ROS_LOCALHOST_ONLY=0
 # ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 ENTRYPOINT ["/docker_entrypoint.sh"]

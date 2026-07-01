@@ -18,7 +18,8 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch_ros.actions import Node
+from launch_ros.actions import LoadComposableNodes, Node
+from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
@@ -171,12 +172,11 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    down_camera = Node(
+    down_camera = ComposableNode(
         package='camera_ros',
-        executable='camera_node',
+        plugin='camera::CameraNode',
         name='camera_node',
         namespace='down_camera',
-        output='screen',
         parameters=[config],
     )
     # ekf_node = Node(
@@ -193,7 +193,10 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-
+    down_camera_container = LoadComposableNodes(
+        target_container='line_follow_container',
+        composable_node_descriptions=[down_camera],
+    )
     state_machine = Node(
         package='robot_core',
         executable='state_machine',
@@ -221,7 +224,7 @@ def generate_launch_description():
         fan_controller,
         front_led_controller,
         front_camera,
-        down_camera,
+        down_camera_container,
         # ekf_node,
         state_machine,
     ])

@@ -54,6 +54,13 @@ idle_button:
       sensor_mode: '2304:1296'
       orientation: 180
       camera_info_url: "file:///root/.ros/camera_info/ost.yaml"
+      use_intra_process_comms: true
+      qos_overrides:
+        /camera/image_raw:
+          publisher:
+            reliability: best_effort
+            history: keep_last
+            depth: 1
 
 /down_camera:
   camera_node:
@@ -61,10 +68,17 @@ idle_button:
       camera: 1
       role: 'viewfinder'
       format: 'BGR888'
-      width: 1536
-      height: 864
+      width: 854
+      height: 480
       sensor_mode: '2304:1296'
       orientation: 0
+      use_intra_process_comms: true
+      qos_overrides:
+        /camera/image_raw:
+          publisher:
+            reliability: best_effort
+            history: keep_last
+            depth: 1
 
 bno08x_driver:
   ros__parameters:
