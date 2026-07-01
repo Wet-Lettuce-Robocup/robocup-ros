@@ -32,7 +32,7 @@ class FanCurve(Node):
     IDLE_SPEED = 40
     LOW_TEMP, LOW_SPEED = 40, 50
     MED_TEMP, MED_SPEED = 50, 70
-    HIGH_TEMP, HIGH_SPEED = 60, 100
+    HIGH_TEMP, HIGH_SPEED = 70, 100
 
     def __init__(self) -> None:
         super().__init__('fan_curve')
@@ -43,6 +43,7 @@ class FanCurve(Node):
             'fan/target_speed',
             10,
         )
+        self.last_speed = 0
 
         self.pi_temp_path = Path('/sys/class/thermal/thermal_zone0/temp')
         self.pi_temp_timer = self.create_timer(10.0, self.pi_temp_timer_callback)
@@ -53,16 +54,19 @@ class FanCurve(Node):
         msg = Int32()
 
         if self.pi_temp_c > self.HIGH_TEMP:
-            msg.data = self.HIGH_SPEED
+            spd = self.HIGH_SPEED
         if self.pi_temp_c > self.MED_TEMP:
-            msg.data = self.MED_SPEED
+            spd = self.MED_SPEED
         if self.pi_temp_c > self.LOW_TEMP:
-            msg.data = self.LOW_SPEED
+            spd = self.LOW_SPEED
         else:
-            msg.data = self.IDLE_SPEED
+            spd = self.IDLE_SPEED
 
-        self.get_logger().info(f'Setting fan temp to {msg} bc temp is {self.pi_temp_c}')
-        self.target_speed_pub.publish(msg)
+        msg.data = spd
+        if spd != self.last_speed:
+            self.target_speed_pub.publish(msg)
+
+        self.last_speed = spd
 
     def _read_pi_temp_c(self) -> float | None:
         try:
