@@ -97,12 +97,12 @@ class StateMachineNode(Node):
         while not self.line_follower_client.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for line follower node...')
 
-        self.rescue_client = self.create_client(
-            ChangeState, f'{self.rescue_node}/change_state'
-        )
-
-        while not self.rescue_client.wait_for_service(timeout_sec=1):
-            self.get_logger().info('Waiting for rescue node...')
+        # self.rescue_client = self.create_client(
+        #     ChangeState, f'{self.rescue_node}/change_state'
+        # )
+        #
+        # while not self.rescue_client.wait_for_service(timeout_sec=1):
+        #     self.get_logger().info('Waiting for rescue node...')
 
         self.timer = self.create_timer(0.05, self.state_loop)
         self.transition_future = None
@@ -187,7 +187,7 @@ class StateMachineNode(Node):
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_CONFIGURE
             )
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
+            # self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
 
             self.current_state = State.IDLE
 
@@ -198,7 +198,7 @@ class StateMachineNode(Node):
                 self.fan_pub.publish(fan_msg)
 
                 self.change_node_state(
-                    self.rescue_client, Transition.TRANSITION_ACTIVATE
+                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
                 )
 
                 self.current_state = State.LINE_FOLLOWING
@@ -211,7 +211,7 @@ class StateMachineNode(Node):
             self.change_node_state(
                 self.line_follower_client, Transition.TRANSITION_DEACTIVATE
             )
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            # self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
