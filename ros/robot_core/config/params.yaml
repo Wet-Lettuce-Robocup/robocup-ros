@@ -2,6 +2,7 @@ state_machine:
   ros__parameters:
     line_follow_node: /line_follow/core_loop
     rescue_node: /rescue_node
+    ml_rescue_node: /ml_rescue/ml_rescue_node
 
 servo_grab:
   ros__parameters:
@@ -52,6 +53,7 @@ idle_button:
       height: 864
       sensor_mode: '2304:1296'
       orientation: 180
+      camera_info_url: "file:///root/.ros/camera_info/ost.yaml"
       use_intra_process_comms: true
       qos_overrides:
         /camera/image_raw:

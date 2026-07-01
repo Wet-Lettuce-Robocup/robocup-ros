@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Detections.msg"
   "srv/I2CRead.srv"
   "srv/I2CWrite.srv"
+  "srv/Inference.srv"
   "action/Move.action"
   "action/MoveTime.action"
   DEPENDENCIES std_msgs builtin_interfaces

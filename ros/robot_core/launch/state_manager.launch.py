@@ -18,16 +18,12 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import LoadComposableNodes, Node
 from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
-    config = os.path.join(
-        get_package_share_directory('robot_core'), 'config', 'params.yaml'
-    )
+    config = os.path.join(get_package_share_directory('robot_core'), 'config', 'params.yaml')
 
     oled_controller = Node(
         package='robot_core',
@@ -161,6 +157,13 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
+    front_led_controller = Node(
+        package='robot_core',
+        executable='front_led_controller',
+        name='front_led_controller',
+        output='screen',
+        parameters=[config],
+    )
     front_camera = Node(
         package='camera_ros',
         executable='camera_node',
@@ -190,13 +193,6 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-
-    line_follow_pkg = get_package_share_directory('line_follow')
-    line_follow_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(line_follow_pkg, 'launch', 'line_follow.launch.py')
-        )
-    )
     down_camera_container = LoadComposableNodes(
         target_container='line_follow_container',
         composable_node_descriptions=[down_camera],
@@ -209,28 +205,26 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    return LaunchDescription(
-        [
-            oled_controller,
-            static_transform,
-            i2c_controller,
-            bno08x_driver,
-            servo_grab,
-            servo_lift,
-            servo_tray_release,
-            odom_publisher,
-            twist_subscriber,
-            movement_action_node,
-            pwm_0_controller,
-            pwm_1_controller,
-            pwm_2_controller,
-            status_led,
-            idle_button,
-            fan_controller,
-            front_camera,
-            # ekf_node,
-            line_follow_launch,
-            down_camera_container,
-            state_machine,
-        ]
-    )
+    return LaunchDescription([
+        oled_controller,
+        static_transform,
+        i2c_controller,
+        bno08x_driver,
+        servo_grab,
+        servo_lift,
+        servo_tray_release,
+        odom_publisher,
+        twist_subscriber,
+        movement_action_node,
+        pwm_0_controller,
+        pwm_1_controller,
+        pwm_2_controller,
+        status_led,
+        idle_button,
+        fan_controller,
+        front_led_controller,
+        front_camera,
+        down_camera_container,
+        # ekf_node,
+        state_machine,
+    ])

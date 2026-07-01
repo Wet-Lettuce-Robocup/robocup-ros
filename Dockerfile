@@ -10,6 +10,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   python3-yaml python3-ply \
   libglib2.0-dev libgstreamer-plugins-base1.0-dev \
   python3-colcon-meson \
+  build-essential \
   ffmpeg \
   libavcodec-dev \
   libavformat-dev \
@@ -21,8 +22,28 @@ ENV CCACHE_DIR=/root/.ccache
 
 RUN git config --global http.sslVerify false
 
+# ========== HAILORT STAGE ==========
+FROM base AS hailo-base
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+COPY hailo_dependencies/hailort_5.3.0_arm64.deb /tmp/
+COPY hailo_dependencies/hailort-5.3.0-cp312-cp312-linux_aarch64.whl /tmp/
+
+RUN apt-get update && \
+  apt-get install -y \
+  libusb-1.0-0 \
+  /tmp/hailort_5.3.0_arm64.deb && \
+  pip3 install --no-cache-dir /tmp/hailort-*.whl && \
+  python3 -c "import hailo_platform" && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -f /tmp/*
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=0
+
 # ==================== LIBCAMERA STAGE ====================
 FROM base AS libcamera-builder
+
 WORKDIR /build/libcamera
 ENV CCACHE_DIR=/root/.ccache
 
@@ -33,6 +54,7 @@ RUN --mount=type=cache,target=/root/.ccache \
 
 # ==================== OPENCV STAGE ====================
 FROM base AS opencv-builder
+
 WORKDIR /build/opencv
 ENV CCACHE_DIR=/root/.ccache
 
@@ -59,7 +81,7 @@ RUN --mount=type=cache,target=/root/.ccache \
   && make install
 
 # ==================== ROS2 EXTERNAL PACKAGES ====================
-FROM base AS external-ros-builder
+FROM hailo-base AS external-ros-builder
 
 COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=libcamera-builder /usr/local /usr/local
@@ -72,10 +94,11 @@ ENV PATH="/usr/lib/ccache:$PATH"
 ENV OpenCV_DIR=/usr/local/lib/cmake/opencv4
 
 WORKDIR /underlay_ws
-RUN --mount=type=cache,target=/var/lib/apt/lists \
-  --mount=type=cache,target=/var/cache/apt/archives \
+RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/underlay_ws/build \
   --mount=type=cache,target=/underlay_ws/ccache \
+  --mount=type=cache,target=/root/.ros \
   export CCACHE_DIR=/underlay_ws/ccache && \
   mkdir -p src \
   && git clone --depth 1 https://github.com/christianrauch/camera_ros.git src/camera_ros \
@@ -119,10 +142,10 @@ RUN --mount=type=cache,target=/overlay_ws/build \
   export CCACHE_DIR=/overlay_ws/ccache && \
   export PATH="/usr/lib/ccache:$PATH" && \
   /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release"
+  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
 # ==================== RUNTIME STAGE ====================
-FROM base AS runtime
+FROM hailo-base AS runtime
 
 # Python dependencies
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
@@ -133,6 +156,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
   apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \ 
   ros-$ROS_DISTRO-rmw-cyclonedds-cpp ros-$ROS_DISTRO-rclcpp-components \
+  ros-$ROS_DISTRO-vision-msgs ros-$ROS_DISTRO-camera-calibration \
   python3-serial python3-smbus2 \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
@@ -140,12 +164,19 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-plugins-ugly \
-  gstreamer1.0-libav
+  gstreamer1.0-libav \
+  libboost-python1.83.0 \
+  python3-dev && \
+  ldconfig && \
+  rm -rf /var/lib/apt/lists/*
 
 COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local
 COPY --from=external-ros-builder /underlay_ws/install /underlay_ws/install
 COPY --from=robot-ros-builder /overlay_ws/install /overlay_ws/install
+
+RUN mkdir -p /root/.ros/camera_info
+COPY ost.yaml /root/.ros/camera_info/ost.yaml
 
 RUN ldconfig
 
@@ -159,5 +190,3 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc && \
 # ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 ENTRYPOINT ["/docker_entrypoint.sh"]
-CMD ["ros2", "launch", "robot_core", "b_rescue.launch.py"]
-# CMD ["bash"]

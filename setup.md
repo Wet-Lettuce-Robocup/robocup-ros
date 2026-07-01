@@ -1,0 +1,5 @@
+On Pi:
+```bash
+sudo apt install dkms
+sudo dpkg --install hailo_dependencies/hailort-pcie-driver_5.3.0_all.deb
+```
