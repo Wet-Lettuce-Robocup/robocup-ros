@@ -229,6 +229,7 @@ class StateMachineNode(Node):
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
+                self.current_state = State.RESCUE
 
         elif self.current_state == State.RESCUE:
             if not self.rescue_active:
@@ -236,6 +237,7 @@ class StateMachineNode(Node):
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
+                self.current_state = State.LINE_FOLLOWING
 
         elif self.current_state == State.STOP:
             self.get_logger().info('Deactivating all nodes')
