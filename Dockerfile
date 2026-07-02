@@ -168,7 +168,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   libboost-python1.83.0 \
   python3-dev && \
   ldconfig && \
-  rm -rf /var/lib/apt/lists/*
+  rm -rf /var/lib/apt/lists/* && \
+  python3 -c "import matplotlib.font_manager"
 
 COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local
