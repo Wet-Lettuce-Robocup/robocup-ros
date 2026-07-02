@@ -211,11 +211,13 @@ class StateMachineNode(Node):
 
         elif self.current_state == State.IDLE:
             if not self.idle_toggle:
+                self.get_logger().info('Exiting idle')
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
 
                 self.current_state = State.LINE_FOLLOWING
 
         elif self.idle_toggle:
+            self.get_logger().info('Idling all nodes')
             self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
@@ -223,18 +225,20 @@ class StateMachineNode(Node):
 
         elif self.current_state == State.LINE_FOLLOWING:
             if self.rescue_active:
+                self.get_logger().info('Starting line follow')
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
 
         elif self.current_state == State.RESCUE:
             if not self.rescue_active:
+                self.get_logger().info('Starting rescue')
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
 
         elif self.current_state == State.STOP:
-            # Deactivate all nodes
+            self.get_logger().info('Deactivating all nodes')
             self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
