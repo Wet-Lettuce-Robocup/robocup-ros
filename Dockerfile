@@ -67,7 +67,7 @@ RUN git clone --depth 1 --branch 4.x https://github.com/opencv/opencv.git \
   && git clone --depth 1 --branch 4.x https://github.com/opencv/opencv_contrib.git
 
 WORKDIR /build/opencv/opencv/build
-RUN --mount=type=cache,target=/root/.ccache \ 
+RUN --mount=type=cache,target=/root/.ccache \
   cmake .. \
   -DCMAKE_BUILD_TYPE=RELEASE \
   -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -155,7 +155,7 @@ COPY docker_entrypoint.sh /
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \ 
+  apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \
   ros-$ROS_DISTRO-rmw-cyclonedds-cpp ros-$ROS_DISTRO-rclcpp-components \
   ros-$ROS_DISTRO-vision-msgs ros-$ROS_DISTRO-camera-calibration \
   python3-serial python3-smbus2 \
