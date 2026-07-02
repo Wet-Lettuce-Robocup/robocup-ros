@@ -149,6 +149,7 @@ FROM hailo-base AS runtime
 
 # Python dependencies
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
+# ENV MPLCONFIGDIR=/tmp/.matplotlib-cache prob not necessary
 RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
 COPY docker_entrypoint.sh /
 
