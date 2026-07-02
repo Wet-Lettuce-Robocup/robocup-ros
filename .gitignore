@@ -6,4 +6,5 @@ build/
 install/
 .vscode/
 videos/
+ros_logs/
 *.mp4
