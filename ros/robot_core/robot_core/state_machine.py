@@ -218,9 +218,12 @@ class StateMachineNode(Node):
 
         elif self.idle_toggle:
             self.get_logger().info('Idling all nodes')
-            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+            if self.current_state == State.LINE_FOLLOWING:
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+            elif self.current_state == State.RESCUE:
+                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.rescue_active = False
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
@@ -241,7 +244,7 @@ class StateMachineNode(Node):
 
         elif self.current_state == State.STOP:
             self.get_logger().info('Deactivating all nodes')
-            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+            # self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
 
