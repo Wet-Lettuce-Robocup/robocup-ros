@@ -1,5 +1,5 @@
 # ==================== BASE / COMMON ====================
-FROM ros:kilted AS base
+FROM ros:kilted@sha256:ce241352eb294cc26f99fc3b0d5a3aa9777781e6f197a9fc20e109befa08ab89 AS base
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
