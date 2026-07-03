@@ -174,6 +174,7 @@ class I2CBusController(Node):
     ULTRASONIC_CMD = 0x83
     TEMP_CMD = 0x84
     STATE_CMD = 0x80
+    MOVE_TIME_C_CMD = 0x85
 
     def __init__(self) -> None:
         super().__init__('i2c_controller')
@@ -204,6 +205,7 @@ class I2CBusController(Node):
         self.ultrasonic_pub = self.create_publisher(Int32, 'ultrasonic', 10)
         self.stm_temp_pub = self.create_publisher(Float32, 'stm_temp', 10)
         self.robot_state_pub = self.create_publisher(Int8, 'robot_state', 10)
+        self.move_time_count_pub = self.create_publisher(Int32, 'move_time_count', 10)
 
         self.claw_tof_en = OutputDevice(20, active_high=True, initial_value=False)
         self.right_tof_en = OutputDevice(19, active_high=True, initial_value=False)
@@ -219,7 +221,9 @@ class I2CBusController(Node):
 
         self.init_tof()
 
-        self.timer = self.create_timer(0.1, self.timer_callback, callback_group=self.cb_group_3)
+        self.timer = self.create_timer(
+            0.1, self.timer_callback, callback_group=self.cb_group_3
+        )
 
     def init_tof(self) -> None:
         """
@@ -325,7 +329,9 @@ class I2CBusController(Node):
         """Attempt to read ultrasonic sensor data from STM32."""
         with self.i2c_lock:
             try:
-                msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.ULTRASONIC_CMD, 4)
+                msg = self.bus.read_i2c_block_data(
+                    self.STM_ADDR, self.ULTRASONIC_CMD, 4
+                )
 
                 dist: int = int.from_bytes(msg)
 
@@ -356,6 +362,21 @@ class I2CBusController(Node):
                 dist: int = int.from_bytes(msg)
 
                 return dist
+
+            except IOError as e:
+                self.get_logger().error(f'I2C read failed! {e}')
+
+    def read_move_time_count(self) -> int | None:
+        """Attempt to read number of move time commands from STM32."""
+        with self.i2c_lock:
+            try:
+                msg = self.bus.read_i2c_block_data(
+                    self.STM_ADDR, self.MOVE_TIME_C_CMD, 4
+                )
+
+                move_time_count: int = int.from_bytes(msg)
+
+                return move_time_count
 
             except IOError as e:
                 self.get_logger().error(f'I2C read failed! {e}')
@@ -431,6 +452,13 @@ class I2CBusController(Node):
         if temp is not None:
             temp_msg.data = temp
             self.stm_temp_pub.publish(temp_msg)
+
+        move_time_count_msg = Int32()
+        move_time_count: int | None = self.read_move_time_count()
+
+        if move_time_count is not None:
+            move_time_count_msg.data = move_time_count
+            self.move_time_count_pub.publish(move_time_count_msg)
 
         state_msg = Int8()
         state: int | None = self.read_state()

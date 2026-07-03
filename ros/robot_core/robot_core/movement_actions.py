@@ -27,7 +27,7 @@ from rclpy.task import Future
 from rclpy.time import Time
 from robot_msgs.action import Move, MoveTime
 from robot_msgs.srv import I2CWrite
-from std_msgs.msg import Int8
+from std_msgs.msg import Int32, Int8
 
 
 class MovementNode(Node):
@@ -117,11 +117,16 @@ class MovementNode(Node):
         self.state_sub = self.create_subscription(
             Int8, 'robot_state', self.state_callback, 10
         )
+        self.move_time_count_sub = self.create_subscription(
+            Int32, 'move_time_count', self.move_time_count_callback, 10
+        )
 
         self.write_cli = self.create_client(I2CWrite, 'i2c_write')
         self.move_time_future: Future[I2CWrite.Response] | None = None
 
         self.robot_state: int = 0
+        self.move_time_count: int = 0
+        self.last_move_time_count: int = 0
 
         while not self.write_cli.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for I2C service...')
@@ -155,9 +160,13 @@ class MovementNode(Node):
 
         self.current_pose = (x, y, yaw)
 
-    def state_callback(self, msg: Int8):
+    def state_callback(self, msg: Int8) -> None:
         """Detect the current state of the robot."""
         self.robot_state = msg.data
+
+    def move_time_count_callback(self, msg: Int32) -> None:
+        """Detect the current move time count of the robot."""
+        self.move_time_count = msg.data
 
     async def execute_callback(self, goal_handle) -> Move.Result:
         """
@@ -334,6 +343,7 @@ class MovementNode(Node):
         feedback = MoveTime.Feedback()
         result = MoveTime.Result(success=False)
 
+        self.last_move_time_count = self.move_time_count
         self.send_time_command(request.vel, request.angular_vel, request.time)
 
         start_time: Time = self.get_clock().now()
@@ -357,6 +367,14 @@ class MovementNode(Node):
             time_left: float = request.time - elapsed_time
 
             if time_left <= 0 and self.robot_state != self.MOVING_TIME_STATE:
+                if self.last_move_time_count == self.move_time_count:
+                    self.get_logger().error(
+                        "Move time command doesn't seem to have been executed. Attempting again..."
+                    )
+                    self.send_time_command(
+                        request.vel, request.angular_vel, request.time
+                    )
+                    continue
                 self.get_logger().info('Goal reached successfully!')
                 goal_handle.succeed()
                 result.success = True
