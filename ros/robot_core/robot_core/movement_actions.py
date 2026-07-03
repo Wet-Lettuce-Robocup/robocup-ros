@@ -374,6 +374,7 @@ class MovementNode(Node):
                     self.send_time_command(
                         request.vel, request.angular_vel, request.time
                     )
+                    start_time = self.get_clock().now()
                     continue
                 self.get_logger().info('Goal reached successfully!')
                 goal_handle.succeed()
