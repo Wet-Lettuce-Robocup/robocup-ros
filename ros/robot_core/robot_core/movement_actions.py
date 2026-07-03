@@ -366,7 +366,7 @@ class MovementNode(Node):
 
             time_left: float = request.time - elapsed_time
 
-            if time_left <= 0 and self.robot_state != self.MOVING_TIME_STATE:
+            if time_left <= -1 and self.robot_state != self.MOVING_TIME_STATE:
                 if self.last_move_time_count == self.move_time_count:
                     self.get_logger().error(
                         "Move time command doesn't seem to have been executed. Attempting again..."
@@ -375,6 +375,7 @@ class MovementNode(Node):
                         request.vel, request.angular_vel, request.time
                     )
                     start_time = self.get_clock().now()
+                    elapsed_time = 0
                     continue
                 self.get_logger().info('Goal reached successfully!')
                 goal_handle.succeed()
