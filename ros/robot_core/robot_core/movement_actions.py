@@ -167,6 +167,7 @@ class MovementNode(Node):
     def move_time_count_callback(self, msg: Int32) -> None:
         """Detect the current move time count of the robot."""
         self.move_time_count = msg.data
+        self.get_logger().info(f'Move time count: {msg.data}')
 
     async def execute_callback(self, goal_handle) -> Move.Result:
         """
@@ -377,6 +378,7 @@ class MovementNode(Node):
                     start_time = self.get_clock().now()
                     elapsed_time = 0
                     continue
+
                 self.get_logger().info('Goal reached successfully!')
                 goal_handle.succeed()
                 result.success = True
