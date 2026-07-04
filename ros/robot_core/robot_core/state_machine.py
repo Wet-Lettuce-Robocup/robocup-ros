@@ -109,7 +109,7 @@ class StateMachineNode(Node):
             Bool, '/at_rescue_zone', self.at_rescue_zone_callback, 10
         )
         self.ball_rescued_sub = self.create_subscription(
-            Bool, '/blue_present', self.ball_rescued_callback, 10
+            Bool, '/ball_rescued', self.ball_rescued_callback, 10
         )
         self.fan_pub = self.create_publisher(Int32, '/fan/target_speed', 10)
         self.exiting_pub = self.create_publisher(Bool, '/exiting', 10)
