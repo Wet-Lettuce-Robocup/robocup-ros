@@ -21,6 +21,7 @@ from lifecycle_msgs.msg import Transition
 from lifecycle_msgs.srv import ChangeState
 import rclpy
 from rclpy.node import Node
+from rclpy.subscription import RCLError
 from std_msgs.msg import Bool, Int32
 
 
@@ -33,6 +34,10 @@ class State(Enum):
     IDLE = 3
     STOP = 4
     COMPLETE = 5
+    RESCUE_LINE = 6
+    RESCUE_DROP = 7
+    RESCUE_LINE_EXIT = 8
+    RESCUE_EXIT = 9
 
 
 class StateMachineNode(Node):
@@ -88,11 +93,26 @@ class StateMachineNode(Node):
         self.idle_button_sub = self.create_subscription(
             Bool, '/idle_button', self.idle_button_callback, 10
         )
+        self.black_sub = self.create_subscription(
+            Bool, '/black_present', self.black_callback, 10
+        )
         self.silver_sub = self.create_subscription(
             Bool, '/silver_present', self.silver_callback, 10
         )
-        self.red_sub = self.create_subscription(Bool, '/red_present', self.red_callback, 10)
+        self.green_sub = self.create_subscription(
+            Bool, '/green_present', self.green_callback, 10
+        )
+        self.blue_sub = self.create_subscription(
+            Bool, '/blue_present', self.blue_callback, 10
+        )
+        self.at_rescue_zone = self.create_subscription(
+            Bool, '/at_rescue_zone', self.at_rescue_zone_callback, 10
+        )
+        self.ball_rescued_sub = self.create_subscription(
+            Bool, '/blue_present', self.ball_rescued_callback, 10
+        )
         self.fan_pub = self.create_publisher(Int32, '/fan/target_speed', 10)
+        self.exiting_pub = self.create_publisher(Bool, '/exiting', 10)
 
         self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
         self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
@@ -105,7 +125,9 @@ class StateMachineNode(Node):
         while not self.line_follower_client.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for line follower node...')
 
-        self.rescue_client = self.create_client(ChangeState, f'{self.rescue_node}/change_state')
+        self.rescue_client = self.create_client(
+            ChangeState, f'{self.rescue_node}/change_state'
+        )
 
         while not self.rescue_client.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for rescue node...')
@@ -136,12 +158,15 @@ class StateMachineNode(Node):
         :param transition_id: Target lifecycle node state.
         :type transition_id: Transition
         """
-        self.transitioning_num += 1
-        req = ChangeState.Request()
-        req.transition.id = transition_id
-        self.transition_future = client.call_async(req)
-        self.transition_future.add_done_callback(self.transition_completed_callback)
-        self.get_logger().info(f'Active transitions: {self.transitioning_num}')
+        try:
+            self.transitioning_num += 1
+            req = ChangeState.Request()
+            req.transition.id = transition_id
+            self.transition_future = client.call_async(req)
+            self.transition_future.add_done_callback(self.transition_completed_callback)
+            self.get_logger().info(f'Active transitions: {self.transitioning_num}')
+        except RCLError as e:
+            self.get_logger().error(f'Could not transition node! {e}')
 
     def transition_completed_callback(self, _):
         self.transitioning_num -= 1
@@ -171,13 +196,53 @@ class StateMachineNode(Node):
         if not msg.data:
             self.idle_toggle = not self.idle_toggle
 
-    def silver_callback(self, msg: Bool):
+    def black_callback(self, msg: Bool):
         if msg.data and self.current_state == State.LINE_FOLLOWING:
             self.rescue_active = True
 
-    def red_callback(self, msg: Bool):
+    def green_callback(self, msg: Bool):
+        if msg.data and self.current_state == State.RESCUE:
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_ACTIVATE
+            )
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.current_state = State.RESCUE_LINE
+        elif msg.data and self.current_state == State.RESCUE_LINE_EXIT:
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+            )
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
+            self.current_state = State.RESCUE_EXIT
+
+    def silver_callback(self, msg: Bool):
+        if msg.data and self.current_state == State.RESCUE_EXIT:
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_ACTIVATE
+            )
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.rescue_active = False
+            self.current_state = State.LINE_FOLLOWING
+
+    def blue_callback(self, msg: Bool):
         if msg.data and self.current_state == State.LINE_FOLLOWING:
             self.current_state = State.STOP
+
+    def at_rescue_zone_callback(self, msg: Bool):
+        if msg.data and self.current_state == State.RESCUE_LINE:
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+            )
+            self.current_state = State.RESCUE_DROP
+
+    def ball_rescued_callback(self, msg: Bool):
+        if msg.data and self.current_state == State.RESCUE_DROP:
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_ACTIVATE
+            )
+            self.change_node_state(
+                self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE
+            )
+            self.current_state = State.RESCUE_EXIT
 
     def clean_exit(self):
         """Disable voltage regulators on exit."""
@@ -203,50 +268,91 @@ class StateMachineNode(Node):
             return
 
         if self.current_state == State.INIT:
-            self.change_node_state(self.line_follower_client, Transition.TRANSITION_CONFIGURE)
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_CONFIGURE
+            )
             self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
-            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_CONFIGURE)
+            self.change_node_state(
+                self.ml_rescue_client, Transition.TRANSITION_CONFIGURE
+            )
 
             self.current_state = State.IDLE
 
         elif self.current_state == State.IDLE:
+            self.exiting_pub.publish(Bool(data=False))
             if not self.idle_toggle:
                 self.get_logger().info('Exiting idle')
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
+                )
 
                 self.current_state = State.LINE_FOLLOWING
 
         elif self.idle_toggle:
             self.get_logger().info('Idling all nodes')
-            if self.current_state == State.LINE_FOLLOWING:
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
-            elif self.current_state == State.RESCUE:
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+
+            self.change_node_state(
+                self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+            )
+            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(
+                self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE
+            )
+
             self.rescue_active = False
+            self.exiting_pub.publish(Bool(data=False))
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
+            self.exiting_pub.publish(Bool(data=False))
             if self.rescue_active:
                 self.get_logger().info('Starting line follow')
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
-                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+                )
+                self.change_node_state(
+                    self.rescue_client, Transition.TRANSITION_ACTIVATE
+                )
+                self.change_node_state(
+                    self.ml_rescue_client, Transition.TRANSITION_ACTIVATE
+                )
                 self.current_state = State.RESCUE
 
         elif self.current_state == State.RESCUE:
+            self.exiting_pub.publish(Bool(data=False))
+
             if not self.rescue_active:
                 self.get_logger().info('Starting rescue')
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
+                self.change_node_state(
+                    self.rescue_client, Transition.TRANSITION_DEACTIVATE
+                )
+                self.change_node_state(
+                    self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE
+                )
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_ACTIVATE
+                )
                 self.current_state = State.LINE_FOLLOWING
+
+        elif self.current_state == State.RESCUE_LINE:
+            self.exiting_pub.publish(Bool(data=False))
+
+        elif self.current_state == State.RESCUE_DROP:
+            self.exiting_pub.publish(Bool(data=False))
+
+        elif self.current_state == State.RESCUE_LINE_EXIT:
+            self.exiting_pub.publish(Bool(data=True))
+
+        elif self.current_state == State.RESCUE_EXIT:
+            self.exiting_pub.publish(Bool(data=True))
 
         elif self.current_state == State.STOP:
             self.get_logger().info('Deactivating all nodes')
             # self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
             self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+            self.change_node_state(
+                self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE
+            )
 
             self.current_state = State.COMPLETE
 
