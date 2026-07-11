@@ -222,7 +222,6 @@ def generate_launch_description():
         status_led,
         idle_button,
         fan_controller,
-        fan_curve,
         front_led_controller,
         front_camera,
         down_camera_container,
