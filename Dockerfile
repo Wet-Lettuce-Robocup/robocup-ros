@@ -1,5 +1,5 @@
 # ==================== BASE / COMMON ====================
-FROM ros:kilted AS base
+FROM ros:kilted@sha256:ce241352eb294cc26f99fc3b0d5a3aa9777781e6f197a9fc20e109befa08ab89 AS base
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -67,7 +67,7 @@ RUN git clone --depth 1 --branch 4.x https://github.com/opencv/opencv.git \
   && git clone --depth 1 --branch 4.x https://github.com/opencv/opencv_contrib.git
 
 WORKDIR /build/opencv/opencv/build
-RUN --mount=type=cache,target=/root/.ccache \ 
+RUN --mount=type=cache,target=/root/.ccache \
   cmake .. \
   -DCMAKE_BUILD_TYPE=RELEASE \
   -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -149,12 +149,13 @@ FROM hailo-base AS runtime
 
 # Python dependencies
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
+# ENV MPLCONFIGDIR=/tmp/.matplotlib-cache prob not necessary
 RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
 COPY docker_entrypoint.sh /
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \ 
+  apt-get update && apt-get -y install ros-$ROS_DISTRO-robot-localization ros-$ROS_DISTRO-camera-info-manager \
   ros-$ROS_DISTRO-rmw-cyclonedds-cpp ros-$ROS_DISTRO-rclcpp-components \
   ros-$ROS_DISTRO-vision-msgs ros-$ROS_DISTRO-camera-calibration \
   python3-serial python3-smbus2 \
@@ -168,7 +169,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   libboost-python1.83.0 \
   python3-dev && \
   ldconfig && \
-  rm -rf /var/lib/apt/lists/*
+  rm -rf /var/lib/apt/lists/* && \
+  python3 -c "import matplotlib.font_manager"
 
 COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local
@@ -187,6 +189,6 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc && \
 
 # ENV ROS_DOMAIN_ID=1
 # ENV ROS_LOCALHOST_ONLY=0
-# ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
 ENTRYPOINT ["/docker_entrypoint.sh"]

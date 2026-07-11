@@ -52,6 +52,8 @@ idle_button:
       width: 1536
       height: 864
       sensor_mode: '2304:1296'
+      autofocus: false
+      lens_position: 5.0
       orientation: 180
       camera_info_url: "file:///root/.ros/camera_info/ost.yaml"
       use_intra_process_comms: true
@@ -74,7 +76,7 @@ idle_button:
       orientation: 0
       use_intra_process_comms: true
       qos_overrides:
-        /camera/image_raw:
+        /down_camera/camera_node/image_raw:
           publisher:
             reliability: best_effort
             history: keep_last

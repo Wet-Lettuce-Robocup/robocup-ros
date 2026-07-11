@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from math import isclose
+from pathlib import Path
 
 from gpiozero import DigitalInputDevice
 import rclpy
@@ -35,6 +36,11 @@ class FanController(Node):
     PULSES_PER_REV = 2
     MAX_RPM = 2000  # min 450
 
+    IDLE_SPEED = 40
+    LOW_TEMP, LOW_SPEED = 40, 50
+    MED_TEMP, MED_SPEED = 50, 70
+    HIGH_TEMP, HIGH_SPEED = 70, 100
+
     def __init__(self) -> None:
         super().__init__('fan_controller')
 
@@ -46,13 +52,14 @@ class FanController(Node):
             10,
         )
 
+        self.last_auto_speed = 0
+        self.auto_enabled = True
+        self.pi_temp_path = Path('/sys/class/thermal/thermal_zone0/temp')
+        self.pi_temp_timer = self.create_timer(10.0, self.pi_temp_timer_callback)
+
         # publishers for pwm controller
-        self.enable_pub = self.create_publisher(
-            Bool, f'/pwm{self.PWM_CHANNEL}/enable', 10
-        )
-        self.period_pub = self.create_publisher(
-            Int32, f'/pwm{self.PWM_CHANNEL}/period', 10
-        )
+        self.enable_pub = self.create_publisher(Bool, f'/pwm{self.PWM_CHANNEL}/enable', 10)
+        self.period_pub = self.create_publisher(Int32, f'/pwm{self.PWM_CHANNEL}/period', 10)
         self.duty_cycle_pub = self.create_publisher(
             Int32, f'/pwm{self.PWM_CHANNEL}/duty_cycle', 10
         )
@@ -73,7 +80,34 @@ class FanController(Node):
         # timer to calculate speed every 5 seconds
         self.create_timer(3, self.calculate_speed)
 
+    def pi_temp_timer_callback(self):
+        self.pi_temp_c = self._read_pi_temp_c()
+
+        if self.pi_temp_c > self.HIGH_TEMP:
+            spd = self.HIGH_SPEED
+        if self.pi_temp_c > self.MED_TEMP:
+            spd = self.MED_SPEED
+        if self.pi_temp_c > self.LOW_TEMP:
+            spd = self.LOW_SPEED
+        else:
+            spd = self.IDLE_SPEED
+
+        if spd != self.last_speed and self.auto_enabled:
+            self.get_logger().info(f'Automatically setting fan target to {spd}%')
+            self.set_fan_speed(spd)
+
+        self.last_speed = spd
+
+    def _read_pi_temp_c(self) -> float | None:
+        try:
+            raw = self.pi_temp_path.read_text(encoding='utf-8').strip()
+            return float(raw) / 1000.0
+        except (OSError, ValueError):
+            return None
+
     def target_rpm_callback(self, msg: Int32) -> None:
+        self.auto_enabled = False
+
         target_speed = msg.data
         self.get_logger().info(f'Setting fan target to {target_speed}%')
         self.set_fan_speed(target_speed)
@@ -128,9 +162,7 @@ class FanController(Node):
         self.calculate_speed()
         if self.current_speed > 0:
             if isclose(self.current_speed, self.target_speed, abs_tol=10):
-                self.get_logger().info(
-                    'target is close to current speed, fan is working'
-                )
+                self.get_logger().info('target is close to current speed, fan is working')
             else:
                 self.get_logger().warn('target is not close to current speed')
         else:
@@ -138,7 +170,6 @@ class FanController(Node):
         self.get_logger().info(
             f'target speed: {self.target_speed}% | current speed: {self.current_speed}%'
         )
-        return
 
 
 def main(args=None):
