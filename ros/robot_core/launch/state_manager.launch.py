@@ -157,13 +157,6 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    fan_curve = Node(
-        package='robot_core',
-        executable='fan_curve',
-        name='fan_curve',
-        output='screen',
-        parameters=[config],
-    )
     front_led_controller = Node(
         package='robot_core',
         executable='front_led_controller',
