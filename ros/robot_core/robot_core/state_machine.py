@@ -88,10 +88,6 @@ class StateMachineNode(Node):
         self.idle_button_sub = self.create_subscription(
             Bool, '/idle_button', self.idle_button_callback, 10
         )
-        # self.black_sub = self.create_subscription(Bool, '/black_present', self.black_callback, 10)
-        # self.silver_sub = self.create_subscription(
-        #     Bool, '/silver_present', self.silver_callback, 10
-        # )
 
         self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
         self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
@@ -234,7 +230,9 @@ class StateMachineNode(Node):
         elif self.current_state == State.LINE_FOLLOWING:
             if self.rescue_active:
                 self.get_logger().info('Starting line follow')
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+                )
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.current_state = State.RESCUE
@@ -253,7 +251,9 @@ class StateMachineNode(Node):
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
             else:
-                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(
+                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
+                )
 
 
 def main(args=None):
