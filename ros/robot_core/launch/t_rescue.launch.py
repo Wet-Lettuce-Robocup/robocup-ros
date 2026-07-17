@@ -32,9 +32,14 @@ def generate_launch_description():
 
     t_rescue_pkg = get_package_share_directory('ml_rescue')
     t_rescue_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(t_rescue_pkg, 'launch', 'ml_rescue.launch.py'))
+    )
+
+    line_follow_pkg = get_package_share_directory('line_follow')
+    line_follow_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(t_rescue_pkg, 'launch', 'ml_rescue.launch.py')
+            os.path.join(line_follow_pkg, 'launch', 'line_follow.launch.py')
         )
     )
 
-    return LaunchDescription([robot_core_launch, t_rescue_launch])
+    return LaunchDescription([robot_core_launch, t_rescue_launch, line_follow_launch])

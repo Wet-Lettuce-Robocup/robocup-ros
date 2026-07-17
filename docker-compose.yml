@@ -29,5 +29,5 @@ services:
     - ros2 
     - launch 
     - robot_core
-    - comp.launch.py
+    - t_rescue.launch.py
     
