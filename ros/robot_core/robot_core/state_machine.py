@@ -219,27 +219,28 @@ class StateMachineNode(Node):
 
         elif self.idle_toggle:
             self.get_logger().info('Idling all nodes')
-
-            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+            if self.rescue_active:
+                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+            else:
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
 
             self.rescue_active = False
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
+            self.get_logger().info('Activating line follow')
             if self.rescue_active:
-                self.get_logger().info('Starting line follow')
-                self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-                )
+                self.get_logger().info('Deactivating line follow')
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.current_state = State.RESCUE
 
         elif self.current_state == State.RESCUE:
+            self.get_logger().info('Activating rescue')
             if not self.rescue_active:
-                self.get_logger().info('Starting rescue')
+                self.get_logger().info('Deactivating rescue')
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
@@ -251,9 +252,7 @@ class StateMachineNode(Node):
                 self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
             else:
-                self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-                )
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
 
 
 def main(args=None):
