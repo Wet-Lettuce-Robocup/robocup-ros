@@ -49,12 +49,12 @@ idle_button:
       camera: 0
       role: 'viewfinder'
       format: 'BGR888'
-      width: 384
-      height: 216
+      width: 1536  # 384
+      height: 864  # 216
       sensor_mode: '2304:1296'
       autofocus: true
       orientation: 180
-      # camera_info_url: "file:///root/.ros/camera_info/ost.yaml"
+      camera_info_url: "file:///root/.ros/camera_info/ost.yaml"
       use_intra_process_comms: true
       qos_overrides:
         /camera/image_raw:

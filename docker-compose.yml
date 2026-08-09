@@ -12,6 +12,7 @@ services:
       - /lib/firmware:/lib/firmware
       - /lib/udev/rules.d:/lib/udev/rules.d
       - /lib/modules:/lib/modules
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
       # - ./ros_logs:/var/log/ros
     group_add:
       - video
