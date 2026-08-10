@@ -26,7 +26,7 @@ from robot_msgs.srv import I2CWrite, ServoCommand
 
 class ServoController(Node):
     """
-    Node providing topics to allow for servos to be controlled over I2C.
+    Node providing services to allow for servos to be controlled over I2C.
 
     Handles controlling a servo through sending commands to STM32 over I2C, and enabling
     servos through a GPIO pin connected to a mosfet in series with the servo power.
@@ -35,8 +35,8 @@ class ServoController(Node):
 
         All angles are in radians.
 
-    :ivar listen_topic: The topic subscribed to for angle commands.
-    :type listen_topic: str
+    :ivar service_name: The service subscribed to for angle commands.
+    :type service_name: str
     :ivar servo_id: The ID of the servo on the STM32 to be controlled.
     :type servo_id: int
     :ivar i2c_address: The I2C address of the STM32.
@@ -117,6 +117,7 @@ class ServoController(Node):
         i2c_request.data = [self.servo_id, degrees]
 
         try:
+            self.gpio_device.on()
             future = self.cli.call_async(i2c_request)
             i2c_response = await future
 
@@ -129,8 +130,6 @@ class ServoController(Node):
                 response.success = False
                 response.message = i2c_response.message
                 return response
-
-            self.gpio_device.on()
 
             response.success = True
             response.message = ''
