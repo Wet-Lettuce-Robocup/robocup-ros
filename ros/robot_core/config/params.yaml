@@ -6,19 +6,19 @@ state_machine:
 
 servo_grab:
   ros__parameters:
-    listen_topic: '/servo/grab'
+    service_name: '/servo/grab'
     servo_id: 0
     gpio_pin: 4
 
 servo_lift:
   ros__parameters:
-    listen_topic: '/servo/lift'
+    service_name: '/servo/lift'
     servo_id: 1
     gpio_pin: 0
 
 servo_tray_release:
   ros__parameters:
-    listen_topic: '/servo/tray_release'
+    service_name: '/servo/tray_release'
     servo_id: 2
     gpio_pin: 1
 
