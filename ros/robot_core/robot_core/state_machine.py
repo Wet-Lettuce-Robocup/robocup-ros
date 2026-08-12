@@ -233,7 +233,7 @@ class StateMachineNode(Node):
 
         elif self.current_state == State.LINE_FOLLOWING:
             self.rescue_counts += 1
-            if self.rescue_counts > 50:
+            if self.rescue_counts == 50:
                 self.rescue_active = True
             if self.rescue_active:
                 self.get_logger().info('Deactivating line follow, activating rescue')
