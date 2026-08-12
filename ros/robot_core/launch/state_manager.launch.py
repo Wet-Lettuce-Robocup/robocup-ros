@@ -23,9 +23,7 @@ from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
-    config = os.path.join(
-        get_package_share_directory('robot_core'), 'config', 'params.yaml'
-    )
+    config = os.path.join(get_package_share_directory('robot_core'), 'config', 'params.yaml')
 
     oled_controller = Node(
         package='robot_core',
@@ -146,7 +144,7 @@ def generate_launch_description():
         parameters=[config],
     )
     idle_button = Node(
-        package='robot_core_cpp',
+        package='robot_core',
         executable='button_publisher',
         name='idle_button',
         output='screen',
@@ -189,7 +187,7 @@ def generate_launch_description():
     #     parameters=[config],
     # )
     movement_action_node = Node(
-        package='robot_core_cpp',
+        package='robot_core',
         executable='movement_actions',
         name='movement_actions',
         output='screen',
@@ -207,28 +205,26 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    return LaunchDescription(
-        [
-            oled_controller,
-            # static_transform,
-            i2c_controller,
-            # bno08x_driver,
-            servo_grab,
-            servo_lift,
-            servo_tray_release,
-            # odom_publisher,
-            # twist_subscriber,
-            movement_action_node,
-            pwm_0_controller,
-            pwm_1_controller,
-            pwm_2_controller,
-            # status_led,
-            idle_button,
-            fan_controller,
-            # front_led_controller,
-            front_camera,
-            down_camera_container,
-            # ekf_node,
-            state_machine,
-        ]
-    )
+    return LaunchDescription([
+        oled_controller,
+        # static_transform,
+        i2c_controller,
+        # bno08x_driver,
+        servo_grab,
+        servo_lift,
+        servo_tray_release,
+        # odom_publisher,
+        twist_subscriber,
+        movement_action_node,
+        pwm_0_controller,
+        pwm_1_controller,
+        pwm_2_controller,
+        # status_led,
+        idle_button,
+        fan_controller,
+        front_led_controller,
+        front_camera,
+        down_camera_container,
+        # ekf_node,
+        state_machine,
+    ])
