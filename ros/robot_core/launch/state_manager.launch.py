@@ -33,29 +33,29 @@ def generate_launch_description():
         parameters=[config],
     )
 
-    static_transform = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='imu_static_tf',
-        arguments=[
-            '--x',
-            '0',
-            '--y',
-            '0',
-            '--z',
-            '0',  # x y z
-            '--roll',
-            '0',
-            '--pitch',
-            '0',
-            '--yaw',
-            '0',  # roll pitch yaw
-            '--frame-id',
-            'base_link',
-            '--child-frame-id',
-            'imu_link',
-        ],
-    )
+    # static_transform = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     name='imu_static_tf',
+    #     arguments=[
+    #         '--x',
+    #         '0',
+    #         '--y',
+    #         '0',
+    #         '--z',
+    #         '0',  # x y z
+    #         '--roll',
+    #         '0',
+    #         '--pitch',
+    #         '0',
+    #         '--yaw',
+    #         '0',  # roll pitch yaw
+    #         '--frame-id',
+    #         'base_link',
+    #         '--child-frame-id',
+    #         'imu_link',
+    #     ],
+    # )
 
     i2c_controller = Node(
         package='robot_core',
@@ -65,13 +65,13 @@ def generate_launch_description():
         parameters=[config],
     )
 
-    bno08x_driver = Node(
-        package='bno08x_driver',
-        executable='bno08x_driver',
-        name='bno08x_driver',
-        output='screen',
-        parameters=[config],
-    )
+    # bno08x_driver = Node(
+    #     package='bno08x_driver',
+    #     executable='bno08x_driver',
+    #     name='bno08x_driver',
+    #     output='screen',
+    #     parameters=[config],
+    # )
 
     # Servos
     servo_grab = Node(
@@ -98,13 +98,13 @@ def generate_launch_description():
         parameters=[config],
     )
 
-    odom_publisher = Node(
-        package='robot_core',
-        executable='odom_publisher',
-        name='odom_publisher',
-        output='screen',
-        parameters=[config],
-    )
+    # odom_publisher = Node(
+    #     package='robot_core',
+    #     executable='odom_publisher',
+    #     name='odom_publisher',
+    #     output='screen',
+    #     parameters=[config],
+    # )
     twist_subscriber = Node(
         package='robot_core',
         executable='twist_subscriber',
@@ -136,13 +136,13 @@ def generate_launch_description():
         output='screen',
         parameters=[config],
     )
-    status_led = Node(
-        package='robot_core',
-        executable='status_led',
-        name='status_led',
-        output='screen',
-        parameters=[config],
-    )
+    # status_led = Node(
+    #     package='robot_core',
+    #     executable='status_led',
+    #     name='status_led',
+    #     output='screen',
+    #     parameters=[config],
+    # )
     idle_button = Node(
         package='robot_core',
         executable='button_publisher',

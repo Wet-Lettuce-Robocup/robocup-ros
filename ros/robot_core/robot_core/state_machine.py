@@ -89,8 +89,9 @@ class StateMachineNode(Node):
             Bool, '/idle_button', self.idle_button_callback, 10
         )
 
-        self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
-        self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
+        # self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
+        # self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
+        # For now, manually turn on regulators.
 
         # Lifecycle service clients
         self.line_follower_client = self.create_client(
