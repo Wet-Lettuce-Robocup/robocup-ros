@@ -116,7 +116,7 @@ class ServoController(Node):
         i2c_request.register_address = self.servo_cmd
         i2c_request.data = [self.servo_id, degrees]
 
-        self.get_logger().info(f'Servo {self.service_name} called with angle {degrees}')
+        # self.get_logger().info(f'Servo {self.service_name} called with angle {degrees}')
 
         try:
             self.gpio_device.on()
