@@ -229,7 +229,7 @@ class StateMachineNode(Node):
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
 
             self.rescue_active = False
-            self.rescue_counts = 0
+            # self.rescue_counts = 0
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:

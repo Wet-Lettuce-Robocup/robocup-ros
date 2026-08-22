@@ -234,38 +234,45 @@ class I2CBusController(Node):
         """
         self.adafruit_i2c = busio.I2C(board.SCL, board.SDA)
 
-        try:
-            self.claw_tof_en.on()
-            self.claw_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
-            self.claw_tof.set_address(self.claw_tof_addr)
-            self.claw_tof.start_ranging()
-            self.claw_tof_enabled = True
-        except Exception as e:
-            self.claw_tof_en.off()
-            self.claw_tof_enabled = False
-            self.get_logger().error(f'Claw TOF init failed! {e}')
+        for i in range(10):
+            if not self.claw_tof_enabled:
+                try:
+                    self.claw_tof_en.on()
+                    self.claw_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+                    self.claw_tof.set_address(self.claw_tof_addr)
+                    self.claw_tof.start_ranging()
+                    self.claw_tof_enabled = True
+                except Exception as e:
+                    self.claw_tof_en.off()
+                    self.claw_tof_enabled = False
+                    self.get_logger().error(f'Claw TOF init failed! {e}')
 
-        try:
-            self.right_tof_en.on()
-            self.right_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
-            self.right_tof.set_address(self.right_tof_addr)
-            self.right_tof.start_ranging()
-            self.right_tof_enabled = True
-        except Exception as e:
-            self.right_tof_en.off()
-            self.right_tof_enabled = False
-            self.get_logger().error(f'Right TOF init failed! {e}')
+            if not self.right_tof_enabled:
+                try:
+                    self.right_tof_en.on()
+                    self.right_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+                    self.right_tof.set_address(self.right_tof_addr)
+                    self.right_tof.start_ranging()
+                    self.right_tof_enabled = True
+                except Exception as e:
+                    self.right_tof_en.off()
+                    self.right_tof_enabled = False
+                    self.get_logger().error(f'Right TOF init failed! {e}')
 
-        try:
-            self.front_tof_en.on()
-            self.front_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
-            self.front_tof.set_address(self.front_tof_addr)
-            self.front_tof.start_ranging()
-            self.front_tof_enabled = True
-        except Exception as e:
-            self.front_tof_en.off()
-            self.front_tof_enabled = False
-            self.get_logger().error(f'Front TOF init failed! {e}')
+            if not self.front_tof_enabled:
+                try:
+                    self.front_tof_en.on()
+                    self.front_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+                    self.front_tof.set_address(self.front_tof_addr)
+                    self.front_tof.start_ranging()
+                    self.front_tof_enabled = True
+                except Exception as e:
+                    self.front_tof_en.off()
+                    self.front_tof_enabled = False
+                    self.get_logger().error(f'Front TOF init failed! {e}')
+
+            if self.claw_tof_enabled and self.right_tof_enabled and self.front_tof_enabled:
+                break
 
     def handle_read(
         self, request: I2CRead.Request, response: I2CRead.Response

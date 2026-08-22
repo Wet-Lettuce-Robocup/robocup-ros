@@ -104,9 +104,6 @@ class MovementNode(Node):
     def __init__(self) -> None:
         super().__init__('movement_node')
 
-        self.declare_parameter('wheel_dist', 0.12)
-        self.wheel_dist: float = self.get_parameter('wheel_dist').value
-
         self.current_pose: tuple[float, float, float] | None = None  # (x, y, yaw)
         self.start_pose: tuple[float, float, float] | None = None
 
