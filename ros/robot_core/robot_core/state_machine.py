@@ -172,17 +172,6 @@ class StateMachineNode(Node):
         if not msg.data:
             self.idle_toggle = not self.idle_toggle
 
-    # def black_callback(self, msg: Bool):
-    #     if msg.data and self.current_state == State.LINE_FOLLOWING:
-    #         self.rescue_active = True
-
-    # def silver_callback(self, msg: Bool):
-    #     if msg.data and self.current_state == State.RESCUE_EXIT:
-    #         self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
-    #         self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-    #         self.rescue_active = False
-    #         self.current_state = State.LINE_FOLLOWING
-
     def clean_exit(self):
         """Disable voltage regulators on exit."""
         self.en_3v3.off()
