@@ -16,7 +16,7 @@
 
 from enum import Enum
 
-from gpiozero import OutputDevice
+# from gpiozero import OutputDevice
 from lifecycle_msgs.msg import Transition
 from lifecycle_msgs.srv import ChangeState
 import rclpy
@@ -222,9 +222,9 @@ class StateMachineNode(Node):
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
-            self.rescue_counts += 1
-            if self.rescue_counts == 50:
-                self.rescue_active = True
+            # self.rescue_counts += 1
+            # if self.rescue_counts == 50:
+            #     self.rescue_active = True
             if self.rescue_active:
                 self.get_logger().info('Deactivating line follow, activating rescue')
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)

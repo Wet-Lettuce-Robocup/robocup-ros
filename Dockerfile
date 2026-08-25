@@ -17,7 +17,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   libavutil-dev \
   libswscale-dev \
   libavdevice-dev
-# libgpiod-dev
 
 ENV CCACHE_DIR=/root/.ccache
 
@@ -100,6 +99,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN python3 -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
 RUN python3 -m pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x ultralytics
 
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install -y libgpiod-dev
+
 WORKDIR /underlay_ws
 RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
   --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -176,6 +179,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   ldconfig && \
   rm -rf /var/lib/apt/lists/* && \
   python3 -c "import matplotlib.font_manager"
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install -y libgpiod-dev
 
 COPY --from=external-ros-builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
