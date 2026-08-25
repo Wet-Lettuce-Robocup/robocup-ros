@@ -6,19 +6,19 @@ state_machine:
 
 servo_grab:
   ros__parameters:
-    listen_topic: '/servo/grab'
+    service_name: '/servo/grab'
     servo_id: 0
     gpio_pin: 4
 
 servo_lift:
   ros__parameters:
-    listen_topic: '/servo/lift'
+    service_name: '/servo/lift'
     servo_id: 1
     gpio_pin: 0
 
 servo_tray_release:
   ros__parameters:
-    listen_topic: '/servo/tray_release'
+    service_name: '/servo/tray_release'
     servo_id: 2
     gpio_pin: 1
 
@@ -49,11 +49,10 @@ idle_button:
       camera: 0
       role: 'viewfinder'
       format: 'BGR888'
-      width: 1536
-      height: 864
+      width: 1536  # 384
+      height: 864  # 216
       sensor_mode: '2304:1296'
-      autofocus: false
-      lens_position: 5.0
+      autofocus: true
       orientation: 180
       camera_info_url: "file:///root/.ros/camera_info/ost.yaml"
       use_intra_process_comms: true

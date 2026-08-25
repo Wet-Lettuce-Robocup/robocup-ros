@@ -16,7 +16,7 @@
 
 from enum import Enum
 
-from gpiozero import OutputDevice
+# from gpiozero import OutputDevice
 from lifecycle_msgs.msg import Transition
 from lifecycle_msgs.srv import ChangeState
 import rclpy
@@ -89,8 +89,9 @@ class StateMachineNode(Node):
             Bool, '/idle_button', self.idle_button_callback, 10
         )
 
-        self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
-        self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
+        # self.en_3v3 = OutputDevice(16, active_high=True, initial_value=True)
+        # self.en_5v = OutputDevice(17, active_high=True, initial_value=True)
+        # For now, manually turn on regulators.
 
         # Lifecycle service clients
         self.line_follower_client = self.create_client(
@@ -100,10 +101,10 @@ class StateMachineNode(Node):
         while not self.line_follower_client.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for line follower node...')
 
-        self.rescue_client = self.create_client(ChangeState, f'{self.rescue_node}/change_state')
+        # self.rescue_client = self.create_client(ChangeState, f'{self.rescue_node}/change_state')
 
-        while not self.rescue_client.wait_for_service(timeout_sec=1):
-            self.get_logger().info('Waiting for rescue node...')
+        # while not self.rescue_client.wait_for_service(timeout_sec=1):
+        #     self.get_logger().info('Waiting for rescue node...')
 
         self.ml_rescue_client = self.create_client(
             ChangeState, f'{self.ml_rescue_node}/change_state'
@@ -115,6 +116,8 @@ class StateMachineNode(Node):
         self.timer = self.create_timer(0.05, self.state_loop)
         self.transition_future = None
         self.transitioning_num: int = 0
+
+        self.rescue_counts = 0
 
     def change_node_state(self, client, transition_id) -> None:
         """
@@ -169,17 +172,6 @@ class StateMachineNode(Node):
         if not msg.data:
             self.idle_toggle = not self.idle_toggle
 
-    # def black_callback(self, msg: Bool):
-    #     if msg.data and self.current_state == State.LINE_FOLLOWING:
-    #         self.rescue_active = True
-
-    # def silver_callback(self, msg: Bool):
-    #     if msg.data and self.current_state == State.RESCUE_EXIT:
-    #         self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
-    #         self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-    #         self.rescue_active = False
-    #         self.current_state = State.LINE_FOLLOWING
-
     def clean_exit(self):
         """Disable voltage regulators on exit."""
         self.en_3v3.off()
@@ -205,7 +197,7 @@ class StateMachineNode(Node):
 
         if self.current_state == State.INIT:
             self.change_node_state(self.line_follower_client, Transition.TRANSITION_CONFIGURE)
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
+            # self.change_node_state(self.rescue_client, Transition.TRANSITION_CONFIGURE)
             self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_CONFIGURE)
 
             self.current_state = State.IDLE
@@ -219,28 +211,31 @@ class StateMachineNode(Node):
 
         elif self.idle_toggle:
             self.get_logger().info('Idling all nodes')
-
-            self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
-            self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+            if self.rescue_active:
+                # self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+                self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
+            else:
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
 
             self.rescue_active = False
+            # self.rescue_counts = 0
             self.current_state = State.IDLE
 
         elif self.current_state == State.LINE_FOLLOWING:
+            # self.rescue_counts += 1
+            # if self.rescue_counts == 50:
+            #     self.rescue_active = True
             if self.rescue_active:
-                self.get_logger().info('Starting line follow')
-                self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-                )
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
+                self.get_logger().info('Deactivating line follow, activating rescue')
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
+                # self.change_node_state(self.rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_ACTIVATE)
                 self.current_state = State.RESCUE
 
         elif self.current_state == State.RESCUE:
             if not self.rescue_active:
-                self.get_logger().info('Starting rescue')
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+                self.get_logger().info('Deactivating rescue, activating line follow')
+                # self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.line_follower_client, Transition.TRANSITION_ACTIVATE)
                 self.current_state = State.LINE_FOLLOWING
@@ -248,12 +243,10 @@ class StateMachineNode(Node):
         elif self.current_state == State.STOP:
             self.get_logger().info('Deactivating all nodes')
             if self.rescue_active:
-                self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
+                # self.change_node_state(self.rescue_client, Transition.TRANSITION_DEACTIVATE)
                 self.change_node_state(self.ml_rescue_client, Transition.TRANSITION_DEACTIVATE)
             else:
-                self.change_node_state(
-                    self.line_follower_client, Transition.TRANSITION_DEACTIVATE
-                )
+                self.change_node_state(self.line_follower_client, Transition.TRANSITION_DEACTIVATE)
 
 
 def main(args=None):

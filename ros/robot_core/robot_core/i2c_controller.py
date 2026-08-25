@@ -30,7 +30,7 @@ import threading
 
 from gpiozero import OutputDevice
 import rclpy
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from robot_msgs.srv import I2CRead, I2CWrite
@@ -190,7 +190,7 @@ class I2CBusController(Node):
 
         self.cb_group_1 = ReentrantCallbackGroup()
         self.cb_group_2 = ReentrantCallbackGroup()
-        self.cb_group_3 = ReentrantCallbackGroup()
+        self.cb_group_3 = MutuallyExclusiveCallbackGroup()
 
         self.read_srv = self.create_service(
             I2CRead, 'i2c_read', self.handle_read, callback_group=self.cb_group_1
@@ -221,9 +221,7 @@ class I2CBusController(Node):
 
         self.init_tof()
 
-        self.timer = self.create_timer(
-            0.1, self.timer_callback, callback_group=self.cb_group_3
-        )
+        self.timer = self.create_timer(0.1, self.timer_callback, callback_group=self.cb_group_3)
 
     def init_tof(self) -> None:
         """
@@ -236,38 +234,45 @@ class I2CBusController(Node):
         """
         self.adafruit_i2c = busio.I2C(board.SCL, board.SDA)
 
-        try:
-            self.claw_tof_en.on()
-            self.claw_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
-            self.claw_tof.set_address(self.claw_tof_addr)
-            self.claw_tof.start_ranging()
-            self.claw_tof_enabled = True
-        except Exception as e:
-            self.claw_tof_en.off()
-            self.claw_tof_enabled = False
-            self.get_logger().error(f'Claw TOF init failed! {e}')
+        for i in range(10):
+            if not self.claw_tof_enabled:
+                try:
+                    self.claw_tof_en.on()
+                    self.claw_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+                    self.claw_tof.set_address(self.claw_tof_addr)
+                    self.claw_tof.start_ranging()
+                    self.claw_tof_enabled = True
+                except Exception as e:
+                    self.claw_tof_en.off()
+                    self.claw_tof_enabled = False
+                    self.get_logger().error(f'Claw TOF init failed! {e}')
 
-        try:
-            self.right_tof_en.on()
-            self.right_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
-            self.right_tof.set_address(self.right_tof_addr)
-            self.right_tof.start_ranging()
-            self.right_tof_enabled = True
-        except Exception as e:
-            self.right_tof_en.off()
-            self.right_tof_enabled = False
-            self.get_logger().error(f'Right TOF init failed! {e}')
+            if not self.right_tof_enabled:
+                try:
+                    self.right_tof_en.on()
+                    self.right_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+                    self.right_tof.set_address(self.right_tof_addr)
+                    self.right_tof.start_ranging()
+                    self.right_tof_enabled = True
+                except Exception as e:
+                    self.right_tof_en.off()
+                    self.right_tof_enabled = False
+                    self.get_logger().error(f'Right TOF init failed! {e}')
 
-        try:
-            self.front_tof_en.on()
-            self.front_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
-            self.front_tof.set_address(self.front_tof_addr)
-            self.front_tof.start_ranging()
-            self.front_tof_enabled = True
-        except Exception as e:
-            self.front_tof_en.off()
-            self.front_tof_enabled = False
-            self.get_logger().error(f'Front TOF init failed! {e}')
+            if not self.front_tof_enabled:
+                try:
+                    self.front_tof_en.on()
+                    self.front_tof = adafruit_vl53l1x.VL53L1X(self.adafruit_i2c)
+                    self.front_tof.set_address(self.front_tof_addr)
+                    self.front_tof.start_ranging()
+                    self.front_tof_enabled = True
+                except Exception as e:
+                    self.front_tof_en.off()
+                    self.front_tof_enabled = False
+                    self.get_logger().error(f'Front TOF init failed! {e}')
+
+            if self.claw_tof_enabled and self.right_tof_enabled and self.front_tof_enabled:
+                break
 
     def handle_read(
         self, request: I2CRead.Request, response: I2CRead.Response
@@ -329,16 +334,14 @@ class I2CBusController(Node):
         """Attempt to read ultrasonic sensor data from STM32."""
         with self.i2c_lock:
             try:
-                msg = self.bus.read_i2c_block_data(
-                    self.STM_ADDR, self.ULTRASONIC_CMD, 4
-                )
+                msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.ULTRASONIC_CMD, 4)
 
                 dist: int = int.from_bytes(msg)
 
                 return dist
 
             except IOError as e:
-                self.get_logger().error(f'I2C read failed! {e}')
+                self.get_logger().error(f'I2C ultrasonic read failed! {e}')
 
     def read_temp(self) -> float | None:
         """Attempt to read temperature data from STM32."""
@@ -351,7 +354,7 @@ class I2CBusController(Node):
                 return dist
 
             except IOError as e:
-                self.get_logger().error(f'I2C read failed! {e}')
+                self.get_logger().error(f'I2C temp read failed! {e}')
 
     def read_state(self) -> int | None:
         """Attempt to read robot state from STM32."""
@@ -364,22 +367,20 @@ class I2CBusController(Node):
                 return dist
 
             except IOError as e:
-                self.get_logger().error(f'I2C read failed! {e}')
+                self.get_logger().error(f'I2C state read failed! {e}')
 
     def read_move_time_count(self) -> int | None:
         """Attempt to read number of move time commands from STM32."""
         with self.i2c_lock:
             try:
-                msg = self.bus.read_i2c_block_data(
-                    self.STM_ADDR, self.MOVE_TIME_C_CMD, 4
-                )
+                msg = self.bus.read_i2c_block_data(self.STM_ADDR, self.MOVE_TIME_C_CMD, 4)
 
                 move_time_count: int = int.from_bytes(msg)
 
                 return move_time_count
 
             except IOError as e:
-                self.get_logger().error(f'I2C read failed! {e}')
+                self.get_logger().error(f'I2C move_time read failed! {e}')
 
     def publish_tof(self) -> None:
         """
@@ -391,44 +392,45 @@ class I2CBusController(Node):
         """
         msg = Int32()
 
-        if self.claw_tof_enabled:
-            try:
-                claw_dist: float | None = self.claw_tof.distance
-            except OSError:
-                claw_dist = None
+        with self.i2c_lock:
+            if self.claw_tof_enabled:
+                try:
+                    claw_dist: float | None = self.claw_tof.distance
+                except OSError:
+                    claw_dist = None
 
-            if claw_dist is None:
-                msg.data = -1
-            else:
-                msg.data = int(claw_dist * 10)
+                if claw_dist is None:
+                    msg.data = -1
+                else:
+                    msg.data = int(claw_dist * 10)
 
-            self.claw_tof_pub.publish(msg)
+                self.claw_tof_pub.publish(msg)
 
-        if self.right_tof_enabled:
-            try:
-                right_dist: float | None = self.right_tof.distance
-            except OSError:
-                right_dist = None
+            if self.right_tof_enabled:
+                try:
+                    right_dist: float | None = self.right_tof.distance
+                except OSError:
+                    right_dist = None
 
-            if right_dist is None:
-                msg.data = -1
-            else:
-                msg.data = int(right_dist * 10)
+                if right_dist is None:
+                    msg.data = -1
+                else:
+                    msg.data = int(right_dist * 10)
 
-            self.right_tof_pub.publish(msg)
+                self.right_tof_pub.publish(msg)
 
-        if self.front_tof_enabled:
-            try:
-                front_dist: float | None = self.front_tof.distance
-            except OSError:
-                front_dist = None
+            if self.front_tof_enabled:
+                try:
+                    front_dist: float | None = self.front_tof.distance
+                except OSError:
+                    front_dist = None
 
-            if front_dist is None:
-                msg.data = -1
-            else:
-                msg.data = int(front_dist * 10)
+                if front_dist is None:
+                    msg.data = -1
+                else:
+                    msg.data = int(front_dist * 10)
 
-            self.front_tof_pub.publish(msg)
+                self.front_tof_pub.publish(msg)
 
     def timer_callback(self) -> None:
         """

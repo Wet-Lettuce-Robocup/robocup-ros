@@ -104,19 +104,12 @@ class MovementNode(Node):
     def __init__(self) -> None:
         super().__init__('movement_node')
 
-        self.declare_parameter('wheel_dist', 0.12)
-        self.wheel_dist: float = self.get_parameter('wheel_dist').value
-
         self.current_pose: tuple[float, float, float] | None = None  # (x, y, yaw)
         self.start_pose: tuple[float, float, float] | None = None
 
         self.twist_pub = self.create_publisher(Twist, 'cmd_vel', 10)
-        self.odom_sub = self.create_subscription(
-            Odometry, 'odom', self.odom_callback, 10
-        )
-        self.state_sub = self.create_subscription(
-            Int8, 'robot_state', self.state_callback, 10
-        )
+        self.odom_sub = self.create_subscription(Odometry, 'odom', self.odom_callback, 10)
+        self.state_sub = self.create_subscription(Int8, 'robot_state', self.state_callback, 10)
         self.move_time_count_sub = self.create_subscription(
             Int32, 'move_time_count', self.move_time_count_callback, 10
         )
@@ -154,9 +147,7 @@ class MovementNode(Node):
 
         # Convert quaternion to yaw
         q = msg.pose.pose.orientation
-        yaw = math.atan2(
-            2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        )
+        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
 
         self.current_pose = (x, y, yaw)
 
@@ -167,7 +158,7 @@ class MovementNode(Node):
     def move_time_count_callback(self, msg: Int32) -> None:
         """Detect the current move time count of the robot."""
         self.move_time_count = msg.data
-        self.get_logger().info(f'Move time count: {msg.data}')
+        # self.get_logger().info(f'Move time count: {msg.data}')
 
     async def execute_callback(self, goal_handle) -> Move.Result:
         """
@@ -211,14 +202,10 @@ class MovementNode(Node):
             dist_traveled, angle_traveled = self._get_progress()
 
             # Publish feedback
-            feedback.distance_travelled = (
-                dist_traveled  # assuming your feedback has this
-            )
+            feedback.distance_travelled = dist_traveled  # assuming your feedback has this
             goal_handle.publish_feedback(feedback)
 
-            dist_diff = request.distance - math.copysign(
-                dist_traveled, request.distance
-            )
+            dist_diff = request.distance - math.copysign(dist_traveled, request.distance)
             angle_diff = request.angle - angle_traveled
 
             # Check if we reached the target (with tolerance)
@@ -230,9 +217,7 @@ class MovementNode(Node):
                 result.success = True
                 break
 
-            linear_vel = (
-                math.copysign(request.vel, dist_diff) if abs(dist_diff) > 0.03 else 0.0
-            )
+            linear_vel = math.copysign(request.vel, dist_diff) if abs(dist_diff) > 0.03 else 0.0
             angular_vel = (
                 math.copysign(request.vel, angle_diff)
                 if abs(angle_diff) > 0.08 and abs(request.angle) > 0.08
@@ -372,9 +357,7 @@ class MovementNode(Node):
                     self.get_logger().error(
                         "Move time command doesn't seem to have been executed. Attempting again..."
                     )
-                    self.send_time_command(
-                        request.vel, request.angular_vel, request.time
-                    )
+                    self.send_time_command(request.vel, request.angular_vel, request.time)
                     start_time = self.get_clock().now()
                     elapsed_time = 0
                     continue

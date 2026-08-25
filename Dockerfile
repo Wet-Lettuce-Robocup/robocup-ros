@@ -89,9 +89,19 @@ RUN ldconfig
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  apt-get update && apt-get install -y libboost-python-dev ccache
+  apt-get update && apt-get install -y libboost-python-dev ccache python3-venv
 ENV PATH="/usr/lib/ccache:$PATH"
 ENV OpenCV_DIR=/usr/local/lib/cmake/opencv4
+
+RUN python3 -m venv --system-site-packages /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN python3 -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+RUN python3 -m pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x ultralytics
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install -y libgpiod-dev
 
 WORKDIR /underlay_ws
 RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -107,7 +117,7 @@ RUN --mount=type=cache,target=/var/lib/apt,sharing=locked \
   && apt-get update \
   && rosdep update \
   && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} --skip-keys='libcamera opencv opencv4 libopencv-dev python3-opencv libopencv-core-dev libopencv-imgproc-dev libopencv-imgcodecs-dev libopencv-videoio-dev libopencv-highgui-dev libopencv-features2d-dev libopencv-calib3d-dev cv_bridge' \
-  && colcon build --packages-select camera_ros cv_bridge --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
+  && /opt/venv/bin/python3 -m colcon build --packages-select camera_ros cv_bridge --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${OpenCV_DIR} --event-handlers=console_direct+"
 
 # ==================== ROS2 ROBOT PACKAGE FILES ====================
 FROM alpine:3 AS cacher
@@ -142,15 +152,12 @@ RUN --mount=type=cache,target=/overlay_ws/build \
   export CCACHE_DIR=/overlay_ws/ccache && \
   export PATH="/usr/lib/ccache:$PATH" && \
   /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-  colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  /opt/venv/bin/python3 -m colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
 # ==================== RUNTIME STAGE ====================
 FROM hailo-base AS runtime
 
-# Python dependencies
-ENV PIP_BREAK_SYSTEM_PACKAGES=1
 # ENV MPLCONFIGDIR=/tmp/.matplotlib-cache prob not necessary
-RUN pip3 install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org rpi5-ws2812 adafruit-circuitpython-vl53l1x
 COPY docker_entrypoint.sh /
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -162,6 +169,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   python3-lgpio python3-gpiozero \
   python3-opencv python3-luma.oled python3-pil \
   python3-matplotlib \
+  python3-venv \
   gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad \
   gstreamer1.0-plugins-ugly \
@@ -171,6 +179,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   ldconfig && \
   rm -rf /var/lib/apt/lists/* && \
   python3 -c "import matplotlib.font_manager"
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install -y libgpiod-dev
+
+COPY --from=external-ros-builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY --from=libcamera-builder /usr/local /usr/local
 COPY --from=opencv-builder /usr/local /usr/local

@@ -92,11 +92,11 @@ class FanController(Node):
         else:
             spd = self.IDLE_SPEED
 
-        if spd != self.last_speed and self.auto_enabled:
+        if spd != self.last_auto_speed and self.auto_enabled:
             self.get_logger().info(f'Automatically setting fan target to {spd}%')
             self.set_fan_speed(spd)
 
-        self.last_speed = spd
+        self.last_auto_speed = spd
 
     def _read_pi_temp_c(self) -> float | None:
         try:
