@@ -18,15 +18,15 @@ import math
 
 from gpiozero import OutputDevice
 import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
-from rclpy.task import Future
-from robot_msgs.srv import I2CWrite
-from std_msgs.msg import Float32
+from robot_msgs.srv import I2CWrite, ServoCommand
 
 
 class ServoController(Node):
     """
-    Node providing topics to allow for servos to be controlled over I2C.
+    Node providing services to allow for servos to be controlled over I2C.
 
     Handles controlling a servo through sending commands to STM32 over I2C, and enabling
     servos through a GPIO pin connected to a mosfet in series with the servo power.
@@ -35,8 +35,8 @@ class ServoController(Node):
 
         All angles are in radians.
 
-    :ivar listen_topic: The topic subscribed to for angle commands.
-    :type listen_topic: str
+    :ivar service_name: The service subscribed to for angle commands.
+    :type service_name: str
     :ivar servo_id: The ID of the servo on the STM32 to be controlled.
     :type servo_id: int
     :ivar i2c_address: The I2C address of the STM32.
@@ -51,28 +51,36 @@ class ServoController(Node):
     def __init__(self) -> None:
         super().__init__('servo_controller')
 
-        self.declare_parameter('listen_topic', '/servo/default')
+        self.declare_parameter('service_name', '/servo/default')
         self.declare_parameter('servo_id', 0)
         self.declare_parameter('i2c_address', 0x67)
         self.declare_parameter('servo_cmd', 0x10)
         self.declare_parameter('gpio_pin', 1)
 
-        self.listen_topic: str = self.get_parameter('listen_topic').value
+        self.service_name: str = self.get_parameter('service_name').value
         self.servo_id: int = self.get_parameter('servo_id').value & 0xFF
         self.i2c_address: int = self.get_parameter('i2c_address').value & 0xFF
         self.servo_cmd: int = self.get_parameter('servo_cmd').value & 0xFF
         self.gpio_pin: int = self.get_parameter('gpio_pin').value
 
-        self.create_subscription(Float32, self.listen_topic, self.servo_callback, 10)
-        self.cli = self.create_client(I2CWrite, 'i2c_write')
-        self.future: Future[I2CWrite.Response] | None = None
+        self.callback_group = ReentrantCallbackGroup()
+
+        self.servo_srv = self.create_service(
+            ServoCommand,
+            self.service_name,
+            self.servo_callback,
+            callback_group=self.callback_group,
+        )
+        self.cli = self.create_client(
+            I2CWrite,
+            'i2c_write',
+            callback_group=self.callback_group,
+        )
 
         while not self.cli.wait_for_service(timeout_sec=1):
             self.get_logger().info('Waiting for I2C service...')
 
-        self.gpio_device = OutputDevice(
-            self.gpio_pin, active_high=True, initial_value=False
-        )
+        self.gpio_device = OutputDevice(self.gpio_pin, active_high=True, initial_value=False)
 
     @staticmethod
     def rads_to_degrees(angle: float) -> float:
@@ -87,7 +95,9 @@ class ServoController(Node):
         """
         return angle * 180 / math.pi
 
-    def servo_callback(self, msg: Float32) -> None:
+    async def servo_callback(
+        self, request: ServoCommand.Request, response: ServoCommand.Response
+    ) -> ServoCommand.Response:
         """
         Set servo position.
 
@@ -97,33 +107,42 @@ class ServoController(Node):
         :param msg: Angle to set servo to in radians.
         :type msg: Float32
         """
-        degrees = int(self.rads_to_degrees(msg.data))
+        degrees = int(self.rads_to_degrees(request.angle))
         degrees = min(max(degrees, 0), 180) & 0xFF
 
-        request = I2CWrite.Request()
+        i2c_request = I2CWrite.Request()
 
-        request.device_address = self.i2c_address
-        request.register_address = self.servo_cmd
-        request.data = [self.servo_id, degrees]
+        i2c_request.device_address = self.i2c_address
+        i2c_request.register_address = self.servo_cmd
+        i2c_request.data = [self.servo_id, degrees]
 
-        self.future = self.cli.call_async(request)
-        self.future.add_done_callback(self.i2c_callback)
+        # self.get_logger().info(f'Servo {self.service_name} called with angle {degrees}')
 
-        self.gpio_device.on()
-
-    def i2c_callback(self, future: Future[I2CWrite.Response]) -> None:
-        """Check if the I2C command was successful."""
         try:
-            response: I2CWrite.Response | None = future.result()
+            self.gpio_device.on()
+            future = self.cli.call_async(i2c_request)
+            i2c_response = await future
 
-            if response is None:
-                raise Exception('No response')
+            if i2c_response is None:
+                response.success = False
+                response.message = 'No response from I2C service'
+                return response
 
-            if not response.success:
-                raise Exception(response.message)
+            if not i2c_response.success:
+                response.success = False
+                response.message = i2c_response.message
+                return response
+
+            response.success = True
+            response.message = ''
 
         except Exception as e:
-            self.get_logger().error(f'Service call failed: {e}')
+            response.success = False
+            response.message = str(e)
+
+            self.get_logger().error(f'Servo command failed: {e}')
+
+        return response
 
     def cleanup(self) -> None:
         """Turn off servo on node exit."""
@@ -133,7 +152,10 @@ class ServoController(Node):
 def main(args=None):
     rclpy.init(args=args)
     servo_controller_node = ServoController()
-    rclpy.spin(servo_controller_node)
+
+    executor = MultiThreadedExecutor()
+    rclpy.spin(servo_controller_node, executor=executor)
+
     servo_controller_node.cleanup()
     servo_controller_node.destroy_node()
     rclpy.shutdown()

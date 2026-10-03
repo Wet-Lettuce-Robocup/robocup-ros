@@ -52,7 +52,6 @@ setup(
             'oled_controller = robot_core.oled_controller:main',
             'button_publisher = robot_core.button_publisher:main',
             'pwm_controller = robot_core.pwm_controller:main',
-            'claw_services = robot_core.claw_services:main',
             'fan_controller = robot_core.fan_controller:main',
             'front_led_controller = robot_core.front_led_controller:main',
             'movement_actions = robot_core.movement_actions:main',

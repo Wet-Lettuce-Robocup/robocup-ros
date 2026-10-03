@@ -43,6 +43,8 @@ class OLEDController(Node):
         self.pi_temp_c: float | None = None
         self.stm_temp_c: float | None = None
 
+        self.stm_temp_count = 0
+
         self.font_large = self._load_font(36)
         self.font_small = self._load_font(12)
         self.font_smallest = self._load_font(8)
@@ -63,24 +65,16 @@ class OLEDController(Node):
         if self.device is None:
             return
 
-        self.status_sub = self.create_subscription(
-            String, 'oled_status', self.status_callback, 10
-        )
+        self.status_sub = self.create_subscription(String, 'oled_status', self.status_callback, 10)
         self.error_sub = self.create_subscription(
             Float64, 'line_follow/line_error', self.error_callback, 10
         )
-        self.silver_sub = self.create_subscription(
-            Int32, 'oled_silver', self.silver_callback, 10
-        )
-        self.black_sub = self.create_subscription(
-            Int32, 'oled_black', self.black_callback, 10
-        )
+        self.silver_sub = self.create_subscription(Int32, 'oled_silver', self.silver_callback, 10)
+        self.black_sub = self.create_subscription(Int32, 'oled_black', self.black_callback, 10)
         self.stm_temp_sub = self.create_subscription(
             Float32, 'stm_temp', self.stm_temp_callback, 10
         )
-        self.rosout_sub = self.create_subscription(
-            Log, '/rosout', self.rosout_callback, 50
-        )
+        self.rosout_sub = self.create_subscription(Log, '/rosout', self.rosout_callback, 50)
 
         self.declare_parameter('page_change', 3.0)
         page_change = float(self.get_parameter('page_change').value)
@@ -98,9 +92,7 @@ class OLEDController(Node):
     def update_display(self):
         with canvas(self.device) as draw:
             if self.current_page == 0:
-                draw.text(
-                    (2, 6), self.status_value[:1], font=self.font_large, fill='white'
-                )
+                draw.text((2, 6), self.status_value[:1], font=self.font_large, fill='white')
                 draw.text(
                     (64, 2),
                     f'Error: {self.error_value}',
@@ -204,9 +196,12 @@ class OLEDController(Node):
             self.update_display()
 
     def stm_temp_callback(self, msg: Float32):
-        self.stm_temp_c = msg.data
-        if self.current_page == 0:
-            self.update_display()
+        self.stm_temp_count += 1
+        if self.stm_temp_count == 5:
+            self.stm_temp_count = 0
+            self.stm_temp_c = msg.data
+            if self.current_page == 0:
+                self.update_display()
 
 
 def main(args=None):

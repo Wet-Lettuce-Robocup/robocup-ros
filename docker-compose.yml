@@ -12,6 +12,8 @@ services:
       - /lib/firmware:/lib/firmware
       - /lib/udev/rules.d:/lib/udev/rules.d
       - /lib/modules:/lib/modules
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /home/robot/.Xauthority:/root/.Xauthority:ro
       # - ./ros_logs:/var/log/ros
     group_add:
       - video
@@ -19,6 +21,7 @@ services:
       - /dev/h1x-0:/dev/h1x-0
     environment:
       - DISPLAY=:0
+      - XAUTHORITY=/root/.Xauthority
       # - ROS_LOG_DIR=/var/log/ros
     stdin_open: true # equivalent to -i (interactive)
     tty: true # equivalent to -t (tty)
@@ -29,5 +32,5 @@ services:
     - ros2 
     - launch 
     - robot_core
-    - comp.launch.py
+    - t_rescue.launch.py
     
